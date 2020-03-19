@@ -8,6 +8,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from bot_messages import message_group_created
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
@@ -89,25 +91,30 @@ async def aux_create_group(ctx):
     existing_voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
     # TODO: ver caso de ejecutar comando sin que terminar otra ejecucion previa
     if not (existing_category or existing_text_channel or existing_voice_channel or existing_role):
-        # Create new role
-        print(f'Creating a new role: {new_role_name}')
-        new_role = await guild.create_role(name=new_role_name)
-        allow_role = discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        allow_role = discord.PermissionOverwrite()
-        # Set permissions
-        # allow_default = discord.Permissions(read_messages = True)
-        allow_default = discord.Permissions()
-        deny = discord.Permissions.none()
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite.from_pair(allow_default, deny),
-        }
-        print(f'Creating a new category: {new_category_name}')
-        new_category = await guild.create_category_channel(new_category_name , overwrites=overwrites)
-        await new_category.set_permissions(new_role, overwrite=allow_role)
-        # await see_permissions(new_role, new_category)
-        print(f'Creating a new channels: "{text_channel_name}" and "{voice_channel_name}"')
-        await guild.create_text_channel(text_channel_name, category=new_category)
-        await guild.create_voice_channel(voice_channel_name, category=new_category)
+        try:
+            # Create new role
+            print(f'Creating a new role: {new_role_name}')
+            new_role = await guild.create_role(name=new_role_name)
+            allow_role = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            allow_role = discord.PermissionOverwrite()
+            # Set permissions
+            # allow_default = discord.Permissions(read_messages = True)
+            allow_default = discord.Permissions()
+            deny = discord.Permissions.none()
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite.from_pair(allow_default, deny),
+            }
+            print(f'Creating a new category: {new_category_name}')
+            new_category = await guild.create_category_channel(new_category_name , overwrites=overwrites)
+            await new_category.set_permissions(new_role, overwrite=allow_role)
+            # await see_permissions(new_role, new_category)
+            print(f'Creating a new channels: ({text_channel_name}) and ({voice_channel_name})')
+            await guild.create_text_channel(text_channel_name, category=new_category)
+            await guild.create_voice_channel(voice_channel_name, category=new_category)
+            await ctx.send(message_group_created(new_category_name, next_num))
+        except Exception as e:
+            print(e)
+            await aux_delete_group(ctx, next_num)
 
 async def see_permissions(member, channel):
     print(f'Permission of {member} in {channel}')
@@ -133,12 +140,13 @@ async def aux_delete_group(ctx, group: Union[int, str]):
     category_name = await get_category_name(group) if type(group) == int else group
     role_name = f"member-{category_name.lower()}"
     category = discord.utils.get(guild.categories, name=category_name)
-    role = discord.utils.get(guild.roles, name=role_name)
     if category:
         channels = category.channels
         for channel in channels:
             await channel.delete()
         await category.delete()
+    role = discord.utils.get(guild.roles, name=role_name)
+    if role:
         await role.delete()
 
 @bot.command(name='join-group', help='Join to a group. Need to provide the group number.')
