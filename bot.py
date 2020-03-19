@@ -10,7 +10,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from bot_messages import message_group_created, message_unexpected_error, message_group_deleted, message_default_error, \
-    mesage_list_group_members, mesage_group_not_exists_error
+    message_list_group_members, mesage_group_not_exists_error, message_no_groups, message_no_members
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -242,25 +242,35 @@ async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = 
 ####################################################################
 """
 
-@bot.command(name='get-group-members', help="List lab group's members.")
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
-async def get_group_members(ctx, group: int):
+async def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message: bool = True):
+    group = int(re.sub(r"Group[\s]+([0-9]+)", r"\1", group)) if type(group) == str else group
     guild = ctx.guild
     role_name = get_role_name(group)
     existing_role = discord.utils.get(guild.roles, name=role_name)
-    if existing_role:
-        await ctx.send(mesage_list_group_members(group, existing_role.members))
-    else:
+    if not existing_role:
         await ctx.send(mesage_group_not_exists_error(group))
+    elif not existing_role.members and show_empty_error_message:
+        await ctx.send(message_no_members())
+    elif existing_role.members:
+        await ctx.send(message_list_group_members(group, existing_role.members))
 
 
+@bot.command(name='group-members', help="List lab group's members.")
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def get_group_members(ctx, group: int):
+    await aux_get_group_members(ctx, group)
 
-@bot.command(name='get-lab-list', help='List all group with its members.')
-@commands.has_role('auxiliar')
+
+@bot.command(name='lab-list', help='List all group with its members.')
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
     guild = ctx.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), guild.categories))
-
+    if not existing_lab_groups:
+        await ctx.send(message_no_groups())
+        return
+    for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
+        await aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
 
 
 @bot.command(name='get-permissions', help='Show (not in the chat) the member\'s permissinos.')

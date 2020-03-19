@@ -14,8 +14,8 @@ def message_default_error():
 def message_unexpected_error(command: str, *args):
     return f"An unexpected error while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
 
-def mesage_group_not_exists_error(group: int, members: List) -> str:
-    return ""
+def mesage_group_not_exists_error(group: int) -> str:
+    return f"Group {group} does not exist!"
 
 """
 ####################################################################
@@ -60,6 +60,12 @@ def get_emoji_group(number: int, letter: str = 'g') -> str:
     L = [aux_map_number_to_emoji(int(digit)) for digit in list(str(number).split())]
     return f"{aux_map_letter_to_emoji(letter)} {' '.join(L)}"
 
-def mesage_list_group_members(group: int, members: List) -> str:
-    member_list = '\n - '.join([member.name for member in members])
-    return f"{get_emoji_group(group)}\n`{member_list}`"
+def message_list_group_members(group: int, members: List) -> str:
+    member_list = '\n - '.join([""] + [member.name for member in members])
+    return f"{get_emoji_group(group)}`{member_list}`"
+
+def message_no_members() -> str:
+    return f"Nobody on this group"
+
+def message_no_groups() -> str:
+    return f"No groups created yet"
