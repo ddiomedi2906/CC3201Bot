@@ -2,7 +2,7 @@
 
 ## CC3201 - Databases
 
-Bot for support the CC3201 course's lab sessions.
+Bot for supporting the CC3201 course's lab sessions.
 
 It helps with the following features:
 
