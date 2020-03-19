@@ -70,7 +70,7 @@ async def on_ready():
 ####################################################################
 """
 
-def get_category_name(number: int):
+def get_lab_group_name(number: int):
     return f"Group {number:2}"
 
 def get_role_name(number: int):
@@ -122,7 +122,7 @@ async def aux_create_group(ctx):
             break
         next_num = idx
     # Create new names
-    new_category_name = get_category_name(next_num)
+    new_category_name = get_lab_group_name(next_num)
     new_role_name = get_role_name(next_num)
     text_channel_name = get_text_channel_name(next_num)
     voice_channel_name = get_voice_channel_name(next_num)
@@ -174,7 +174,7 @@ async def create_many_groups(ctx, num_groups: int):
 
 async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool = True):
     guild = ctx.guild
-    category_name = get_category_name(group) if type(group) == int else group
+    category_name = get_lab_group_name(group) if type(group) == int else group
     role_name = f"member-{category_name.lower()}"
     category = discord.utils.get(guild.categories, name=category_name)
     success = False
@@ -229,7 +229,7 @@ async def join_group(ctx, group: Union[int, str], member_name: Optional[str] = N
         await ctx.send(message_member_not_exists(member_name))
         return
     role_name = get_role_name(group) if type(group) == int else group
-    lab_group_name = get_category_name(group) if type(group) == int else group
+    lab_group_name = get_lab_group_name(group) if type(group) == int else group
     role = discord.utils.get(guild.roles, name=role_name)
     await member.add_roles(role)
     print(f'Role "{role}" assigned to {member}')
@@ -251,7 +251,7 @@ async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = 
         await ctx.send(message_member_not_exists(member_name))
         return
     role_name = get_role_name(group) if type(group) == int else group
-    lab_group_name = get_category_name(group) if type(group) == int else group
+    lab_group_name = get_lab_group_name(group) if type(group) == int else group
     role = discord.utils.get(guild.roles, name=role_name)
     await member.remove_roles(role)
     print(f'Role "{role}" removed to {member}')
