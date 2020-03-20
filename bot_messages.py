@@ -24,6 +24,9 @@ def message_command_not_allowed() -> str:
 def message_member_not_exists(member_name: str) -> str:
     return f"Member {member_name} does not exist!"
 
+def message_lab_group_not_exists(group_name: str) -> str:
+    return f"{group_name} does not exist!"
+
 """
 ####################################################################
 ######################### GROUP MESSAGES ###########################

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from bot_messages import message_group_created, message_unexpected_error, message_group_deleted, message_default_error, \
     message_list_group_members, message_group_not_exists_error, message_no_groups, message_no_members, \
     message_command_not_allowed, message_member_not_exists, message_member_joined_group, message_member_left_group, \
-    message_call_for_help, message_mention_member_when_join_group
+    message_call_for_help, message_mention_member_when_join_group, message_lab_group_not_exists
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -109,7 +109,7 @@ def get_text_channel_name(number: int):
     return f"text-channel-{number}"
 
 def get_voice_channel_name(number: int):
-    return f"voice-channel {number:2}"
+    return f"voice-channel {number}"
 
 async def create_new_role(guild, role_name: str, mentionable: bool = False, permissions: Optional[Permissions] = None) -> Role:
     existing_role = discord.utils.get(guild.roles, name=role_name)
@@ -184,6 +184,7 @@ async def aux_create_group(ctx):
             print(e)
             await ctx.send(message_unexpected_error("create-group"))
             await aux_delete_group(ctx, next_num, show_bot_message=False)
+            raise e
 
 
 @bot.command(name='create-group', help='Create a new lab group.')
@@ -262,17 +263,23 @@ async def join_group(ctx, group: Union[int, str], member_name: Optional[str] = N
     role_name = get_role_name(group) if type(group) == int else group
     lab_group_name = get_lab_group_name(group) if type(group) == int else group
     role = discord.utils.get(guild.roles, name=role_name)
-    await member.add_roles(role)
-    voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
-    voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
-    # await member.move_to(voice_channel)
-    print(f'Role "{role}" assigned to {member}')
-    await ctx.send(message_member_joined_group(member.name, lab_group_name))
-    text_channel_name = get_text_channel_name(group) if type(group) == int else group
-    print(text_channel_name)
-    text_channel = discord.utils.get(guild.channels, name=text_channel_name)
-    if text_channel:
-        await text_channel.send(message_mention_member_when_join_group(member, lab_group_name))
+    if role:
+        await member.add_roles(role)
+        voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
+        voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
+        if voice_channel:
+            print(voice_channel)
+        print(member.voice)
+        # await member.move_to(voice_channel)
+        print(f'Role "{role}" assigned to {member}')
+        await ctx.send(message_member_joined_group(member.name, lab_group_name))
+        text_channel_name = get_text_channel_name(group) if type(group) == int else group
+        print(text_channel_name)
+        text_channel = discord.utils.get(guild.channels, name=text_channel_name)
+        if text_channel:
+            await text_channel.send(message_mention_member_when_join_group(member, lab_group_name))
+    else:
+        await ctx.send(message_lab_group_not_exists(lab_group_name))
 
 
 @bot.command(name='leave-group', help='Leave a group. Need to provide the group number.')
@@ -292,10 +299,13 @@ async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = 
     role_name = get_role_name(group) if type(group) == int else group
     lab_group_name = get_lab_group_name(group) if type(group) == int else group
     role = discord.utils.get(guild.roles, name=role_name)
-    await member.remove_roles(role)
-    # await member.move_to()
-    print(f'Role "{role}" removed to {member}')
-    await ctx.send(message_member_left_group(member.name, lab_group_name))
+    if role:
+        await member.remove_roles(role)
+        # await member.move_to()
+        print(f'Role "{role}" removed to {member}')
+        await ctx.send(message_member_left_group(member.name, lab_group_name))
+    else:
+        await ctx.send(message_lab_group_not_exists(lab_group_name))
 
 """
 ####################################################################
