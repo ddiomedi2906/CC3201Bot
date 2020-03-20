@@ -265,19 +265,17 @@ async def join_group(ctx, group: Union[int, str], member_name: Optional[str] = N
     role = discord.utils.get(guild.roles, name=role_name)
     if role:
         await member.add_roles(role)
-        voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
-        voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
-        if voice_channel:
-            print(voice_channel)
-        print(member.voice)
-        # await member.move_to(voice_channel)
         print(f'Role "{role}" assigned to {member}')
         await ctx.send(message_member_joined_group(member.name, lab_group_name))
         text_channel_name = get_text_channel_name(group) if type(group) == int else group
-        print(text_channel_name)
         text_channel = discord.utils.get(guild.channels, name=text_channel_name)
         if text_channel:
             await text_channel.send(message_mention_member_when_join_group(member, lab_group_name))
+        # Move to voice channel if connected
+        voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
+        voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
+        if voice_channel and member.voice and member.voice.channel:
+            await member.move_to(voice_channel)
     else:
         await ctx.send(message_lab_group_not_exists(lab_group_name))
 
@@ -301,9 +299,13 @@ async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = 
     role = discord.utils.get(guild.roles, name=role_name)
     if role:
         await member.remove_roles(role)
-        # await member.move_to()
         print(f'Role "{role}" removed to {member}')
         await ctx.send(message_member_left_group(member.name, lab_group_name))
+        # Disconnect from the group voice channel if connected to it
+        voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
+        voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
+        if voice_channel and member.voice and member.voice.channel == voice_channel:
+            await member.move_to()
     else:
         await ctx.send(message_lab_group_not_exists(lab_group_name))
 
@@ -386,7 +388,6 @@ async def raise_hand(ctx):
     group = int(re.sub(r"member-group\s+(\d+)", r"\1", group_role.name))
     group_name = get_lab_group_name(group)
     general_channel = discord.utils.get(ctx.author.guild.channels, name="general")
-    print(general_channel)
     if general_channel:
         await ask_for_help(ctx.author, group_name, general_channel)
 """
