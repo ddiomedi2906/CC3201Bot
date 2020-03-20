@@ -15,8 +15,8 @@ def message_default_error():
 def message_unexpected_error(command: str, *args):
     return f"An unexpected error while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
 
-def message_group_not_exists_error(group: int) -> str:
-    return f"Group {group} does not exist!"
+def message_group_not_exists_error(group: str) -> str:
+    return f"{group} does not exist!"
 
 def message_command_not_allowed() -> str:
     return "You are not allowed to execute this command"
@@ -116,6 +116,9 @@ def message_call_for_help(group_name: str, available_members: List[discord.Membe
 
 def message_help_on_the_way(member: discord.Member, show_mention: bool = False) -> str:
     return f"**{member.mention if show_mention else member.name}** on the way!"
+
+def message_member_not_in_group_for_help() -> str:
+    return f"You have to be part of a group to raise your hand. Try using `!labgroup join <number>` :)"
 
 def message_asking_for_help() -> str:
     return f"Sure, I will bring someone."

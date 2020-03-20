@@ -10,12 +10,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import unicodedata
 
-import bot_messages
-from bot_messages import message_group_created, message_unexpected_error, message_group_deleted, message_default_error, \
-    message_list_group_members, message_group_not_exists_error, message_no_groups, message_no_members, \
-    message_command_not_allowed, message_member_not_exists, message_member_joined_group, message_member_left_group, \
-    message_call_for_help, message_mention_member_when_join_group, message_lab_group_not_exists, \
-    message_asking_for_help, message_can_not_get_help_error, message_no_one_available_error
+import bot_messages as btm
+
 from emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
 load_dotenv()
@@ -100,7 +96,7 @@ async def on_reaction_add(reaction, user):
                 group_name = get_lab_group_name(group)
                 lab_group = discord.utils.get(user.guild.channels, name=group_name)
                 await go_for_help(member, lab_group, group)
-                await reaction.message.channel.send(bot_messages.message_help_on_the_way(member))
+                await reaction.message.channel.send(btm.message_help_on_the_way(member))
                 return
     if message.author == bot.user:
         return
@@ -257,10 +253,10 @@ async def aux_create_group(ctx):
             # Success message
             general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
             if general_channel:
-                await general_channel.send(message_group_created(new_category_name, next_num))
+                await general_channel.send(btm.message_group_created(new_category_name, next_num))
         except Exception as e:
             print(e)
-            await ctx.send(message_unexpected_error("create-group"))
+            await ctx.send(btm.message_unexpected_error("create-group"))
             await aux_delete_group(ctx, next_num, show_bot_message=False)
             raise e
 
@@ -278,14 +274,14 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
         await category.delete()
         success = True
     elif show_bot_message:
-        await ctx.send(message_default_error())
+        await ctx.send(btm.message_group_not_exists_error(category_name))
     role = discord.utils.get(guild.roles, name=role_name)
     if role:
         await role.delete()
     if success and show_bot_message:
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
         if general_channel:
-            await general_channel.send(message_group_deleted(category_name))
+            await general_channel.send(btm.message_group_deleted(category_name))
 
 """
 ####################################################################
@@ -347,11 +343,11 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
     new_lab_group_name = get_lab_group_name(group) if type(group) == int else group
     existing_lab_group = existing_member_lab_role(member)
     if existing_lab_group:
-        await ctx.send(bot_messages.message_member_already_in_group(member.name, existing_lab_group.name))
+        await ctx.send(btm.message_member_already_in_group(member.name, existing_lab_group.name))
     elif not new_role:
-        await ctx.send(message_lab_group_not_exists(new_lab_group_name))
+        await ctx.send(btm.message_lab_group_not_exists(new_lab_group_name))
     elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
-        await ctx.send(bot_messages.message_max_members_in_group_error(new_lab_group_name, MAX_STUDENTS_PER_GROUP))
+        await ctx.send(btm.message_max_members_in_group_error(new_lab_group_name, MAX_STUDENTS_PER_GROUP))
     else:
         await member.add_roles(new_role)
         print(f'Role "{new_role}" assigned to {member}')
@@ -364,11 +360,11 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
         text_channel = discord.utils.get(guild.channels,
                                          name=get_text_channel_name(group) if type(group) == int else group)
         if text_channel:
-            await text_channel.send(message_mention_member_when_join_group(member, new_lab_group_name))
+            await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
         # Message to general channel
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
         if general_channel:
-            await general_channel.send(message_member_joined_group(member.name, new_lab_group_name))
+            await general_channel.send(btm.message_member_joined_group(member.name, new_lab_group_name))
 
 
 
@@ -385,13 +381,13 @@ async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool
         # Message to group text channel
         text_channel = existing_member_lab_text_channel(member)
         if text_channel:
-            await text_channel.send(message_member_left_group(member.name, existing_lab_role.name))
+            await text_channel.send(btm.message_member_left_group(member.name, existing_lab_role.name))
         # Message to general channel
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
         if general_channel:
-            await general_channel.send(message_member_left_group(member.name, existing_lab_role.name))
+            await general_channel.send(btm.message_member_left_group(member.name, existing_lab_role.name))
     elif show_not_in_group_error:
-        await ctx.send(bot_messages.message_member_not_in_group(member.name))
+        await ctx.send(btm.message_member_not_in_group(member.name))
 
 """
 ####################################################################
@@ -409,10 +405,10 @@ async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]
     guild = ctx.guild
     member = discord.utils.get(guild.members, name=member_name)
     if not member:
-        await ctx.send(message_member_not_exists(member_name))
+        await ctx.send(btm.message_member_not_exists(member_name))
     elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
         await ctx.send(
-            bot_messages.message_max_members_in_group_error(get_lab_group_name(group) if type(group) == int else group,
+            btm.message_max_members_in_group_error(get_lab_group_name(group) if type(group) == int else group,
                                                             MAX_STUDENTS_PER_GROUP))
     else:
         await leave_group(ctx, member, show_not_in_group_error=False)
@@ -442,11 +438,11 @@ def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message:
     role_name = get_role_name(group)
     existing_role = discord.utils.get(guild.roles, name=role_name)
     if not existing_role:
-        return message_group_not_exists_error(group)
+        return btm.message_group_not_exists_error(group)
     elif not existing_role.members and show_empty_error_message:
-        return message_no_members()
+        return btm.message_no_members()
     elif existing_role.members:
-        return message_list_group_members(group, existing_role.members)
+        return btm.message_list_group_members(group, existing_role.members)
     else:
         return None
 
@@ -465,7 +461,7 @@ async def get_lab_list(ctx):
     guild = ctx.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), guild.categories))
     if not existing_lab_groups:
-        await ctx.send(message_no_groups())
+        await ctx.send(btm.message_no_groups())
         return
     list_string = []
     for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
@@ -508,7 +504,7 @@ async def ask_for_help(member: discord.Member, group_name: str, general_channel:
     available_team = []
     for role in TT_roles:
         available_team.extend(get_available_members_from_role(role))
-    await general_channel.send(message_call_for_help(group_name, available_team))
+    await general_channel.send(btm.message_call_for_help(group_name, available_team))
     return len(available_team)
 
 
@@ -516,7 +512,7 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
     text_channel_name = get_text_channel_name(group)
     text_channel = discord.utils.get(lab_group.channels, name=text_channel_name)
     if text_channel:
-        await text_channel.send(bot_messages.message_help_on_the_way(member))
+        await text_channel.send(btm.message_help_on_the_way(member))
     voice_channel_name = get_voice_channel_name(group)
     voice_channel = discord.utils.get(lab_group.channels, name=voice_channel_name)
     if voice_channel and member.voice and member.voice.channel:
@@ -535,16 +531,18 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
 async def raise_hand(ctx):
     group_role = discord.utils.find(lambda r: re.search(r"member-group\s+\d+", r.name), ctx.author.roles)
     # group = int(re.sub(r"member-group\s+(\d+)", r"\1", group_role.name))
-    group_name = member_lab_group_name(ctx.author)
+    existing_lab_group = existing_member_lab_group(ctx.author)
     general_channel = discord.utils.get(ctx.author.guild.channels, name=GENERAL_CHANNEL_NAME)
-    if general_channel and group_name:
-        available = await ask_for_help(ctx.author, group_name, general_channel)
+    if general_channel and existing_lab_group:
+        available = await ask_for_help(ctx.author, existing_lab_group.name, general_channel)
         if available:
-            await ctx.channel.send(message_asking_for_help())
+            await ctx.channel.send(btm.message_asking_for_help())
         else:
-            await ctx.channel.send(message_no_one_available_error())
-    elif group_name:
-        await ctx.channel.send(message_can_not_get_help_error())
+            await ctx.channel.send(btm.message_no_one_available_error())
+    elif not existing_lab_group:
+        await ctx.channel.send(btm.message_member_not_in_group_for_help())
+    else:
+        await ctx.channel.send(btm.message_can_not_get_help_error())
 
 
 """
@@ -580,9 +578,7 @@ async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
 async def salute(ctx):
     await ctx.send(get_unicode_emoji_from_alias('wave'))
     # await ctx.author.create_dm()
-    #await ctx.author.dm_channel.send(
-    #    f'Hi {ctx.author.name}, welcome to my Discord server!'
-    #)
+    #await ctx.author.dm_channel.send(f'Hi {ctx.author.name}, welcome to my Discord server!')
 
 
 """
