@@ -121,7 +121,7 @@ async def on_command_error(ctx, error):
         await ctx.send(f'Only {error.number} concurred invocations of this command are allowed.')
     elif isinstance(error, commands.errors.CommandOnCooldown):
         print(error)
-        await ctx.send(f'You have to wait {error.retry_after}s before using this command again.')
+        await ctx.send(f'You have to wait {error.retry_after:.3}s before using this command again.')
     elif isinstance(error, commands.errors.CheckFailure):
         print(error)
         await ctx.send('You do not have the correct role for this command.')
@@ -410,6 +410,8 @@ async def labgroup_command(ctx):
     await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
 
 @labgroup_command.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
+@commands.cooldown(rate=1, per=5)
+@commands.max_concurrency(number=1)
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]):
     guild = ctx.guild
@@ -426,12 +428,15 @@ async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]
 
 
 @labgroup_command.command(name='join', help='Join to a group. Need to provide the group number.')
+@commands.cooldown(rate=1, per=1)
+@commands.max_concurrency(number=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def group_join_subcommand(ctx, group: Union[int, str]):
     await join_group(ctx, ctx.author, group)
 
 
 @labgroup_command.command(name='leave', help='Leave a group. Need to provide the group number.')
+@commands.cooldown(rate=1, per=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def group_leave_subcommand(ctx, group: Union[int, str], member_name: Optional[str] = None):
     await leave_group(ctx, ctx.author)
@@ -458,6 +463,7 @@ def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message:
 
 
 @bot.command(name='group-members', help="List lab group's members.", hidden=True)
+@commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_group_members(ctx, group: int):
     message = aux_get_group_members(ctx, group)
@@ -466,6 +472,7 @@ async def get_group_members(ctx, group: int):
 
 
 @bot.command(name='lab-list', help='List all group with its members.', hidden=True)
+@commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
     guild = ctx.guild
@@ -580,6 +587,7 @@ async def nine_nine(ctx):
     await ctx.send(response)
 
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
+@commands.cooldown(rate=1, per=1)
 async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
     dice = [
         str(random.choice(range(1, number_of_sides + 1)))
@@ -588,6 +596,7 @@ async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
     await ctx.send(', '.join(dice))
 
 @bot.command(name='salute', help='Say hello to this friendly bot.')
+@commands.cooldown(rate=1, per=1)
 async def salute(ctx):
     await ctx.send(get_unicode_emoji_from_alias('wave'))
     # await ctx.author.create_dm()
