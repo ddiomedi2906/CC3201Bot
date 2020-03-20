@@ -497,15 +497,12 @@ def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
 def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
     return list(filter(lambda r: r.name in [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME], guild.roles))
 
-
-async def ask_for_help(member: discord.Member, group_name: str, general_channel: discord.TextChannel) -> int:
-    guild = member.guild
+def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
     TT_roles = get_teaching_team_roles(guild)
     available_team = []
     for role in TT_roles:
         available_team.extend(get_available_members_from_role(role))
-    await general_channel.send(btm.message_call_for_help(group_name, available_team))
-    return len(available_team)
+    return available_team
 
 
 async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
@@ -529,18 +526,24 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
 @commands.cooldown(rate=1, per=2)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def raise_hand(ctx):
-    group_role = discord.utils.find(lambda r: re.search(r"member-group\s+\d+", r.name), ctx.author.roles)
-    # group = int(re.sub(r"member-group\s+(\d+)", r"\1", group_role.name))
-    existing_lab_group = existing_member_lab_group(ctx.author)
-    general_channel = discord.utils.get(ctx.author.guild.channels, name=GENERAL_CHANNEL_NAME)
-    if general_channel and existing_lab_group:
-        available = await ask_for_help(ctx.author, existing_lab_group.name, general_channel)
-        if available:
-            await ctx.channel.send(btm.message_asking_for_help())
-        else:
-            await ctx.channel.send(btm.message_no_one_available_error())
-    elif not existing_lab_group:
+    member = ctx.author
+    existing_lab_group = existing_member_lab_group(member)
+    general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
+    if not existing_lab_group:
         await ctx.channel.send(btm.message_member_not_in_group_for_help())
+    elif ctx.channel != existing_member_lab_text_channel(member):
+        await ctx.channel(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
+    elif general_channel:
+        online_team = get_teaching_team_members(ctx.author.guild)
+        available_team = list(filter(lambda m: not existing_member_lab_group(member), online_team))
+        if available_team:
+            await ctx.channel.send(btm.message_asking_for_help())
+            await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
+        elif online_team:
+            await ctx.channel.send(btm.message_no_one_available_error())
+            await general_channel.send(btm.message_call_for_help(existing_lab_group.name, online_team))
+        else:
+            await ctx.channel.send(btm.message_no_one_online_error())
     else:
         await ctx.channel.send(btm.message_can_not_get_help_error())
 

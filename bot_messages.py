@@ -16,16 +16,16 @@ def message_unexpected_error(command: str, *args):
     return f"An unexpected error while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
 
 def message_group_not_exists_error(group: str) -> str:
-    return f"{group} does not exist!"
+    return f"**{group}** does not exist!"
 
 def message_command_not_allowed() -> str:
     return "You are not allowed to execute this command"
 
 def message_member_not_exists(member_name: str) -> str:
-    return f"Member {member_name} does not exist!"
+    return f"Member **{member_name}** does not exist!"
 
 def message_lab_group_not_exists(group_name: str) -> str:
-    return f"{group_name} does not exist!"
+    return f"**{group_name}** does not exist!"
 
 """
 ####################################################################
@@ -49,7 +49,7 @@ def message_member_already_in_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** is already part of **{group_name}!**"
 
 def message_max_members_in_group_error(group_name: str, max_size: int) -> str:
-    return f"**{group_name}!** has reached its maximum limit! (_{max_size}_)"
+    return f"**{group_name}!** has reached its maximum limit! (**{max_size}**)"
 
 def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has left **{group_name}!**"
@@ -124,7 +124,13 @@ def message_asking_for_help() -> str:
     return f"Sure, I will bring someone."
 
 def message_no_one_available_error() -> str:
-    return f"Sorry, there is no one available right now. Try later."
+    return f"Hey! No one is available for the moment. Please stay on the line :)"
+
+def message_no_one_online_error() -> str:
+    return f"No one is online :("
 
 def message_can_not_get_help_error() -> str:
     return "Sorry, I can't do that right now."
+
+def message_stay_in_your_seat_error(member: discord.Member, group_name: str) -> str:
+    return f"Please {member.mention} stay in your group! (**{group_name}**)"
