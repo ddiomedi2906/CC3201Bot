@@ -45,10 +45,10 @@ async def on_ready():
     print(f'Guild Members:\n - {members}')
     all_allow = discord.Permissions.all()
     text_and_voice_allow = discord.Permissions(66582848)
-    await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, mentionable=True)
-    await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, mentionable=True)
-    await create_new_role(guild, TA_ROLE_NAME, permissions=all_allow, mentionable=True)
-    await create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, mentionable=True)
+    await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
+    await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
+    await create_new_role(guild, TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.purple(), hoist=True, mentionable=True)
+    await create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(), hoist=True, mentionable=True)
 
 
 @bot.event
@@ -59,7 +59,6 @@ async def on_member_join(member):
     print(f'Role "{role}" assigned to {member}')
 
 
-"""
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -76,7 +75,9 @@ async def on_message(message):
         assistant_mention = discord.utils.get(message.role_mentions, name=TA_ROLE_NAME)
         available_people.extend(get_available_members_from_role(assistant_mention))
         print(f"People available: {' - '.join([member.name for member in available_people])}")
-"""
+    if re.search(r"!.+?", message.content):
+        await bot.process_commands(message)
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -111,15 +112,14 @@ def get_text_channel_name(number: int):
 def get_voice_channel_name(number: int):
     return f"voice-channel {number}"
 
-async def create_new_role(guild, role_name: str, mentionable: bool = False, permissions: Optional[Permissions] = None) -> Role:
+async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role:
     existing_role = discord.utils.get(guild.roles, name=role_name)
-    permissions = permissions if permissions else discord.Permissions()
     if not existing_role:
-        new_role = await guild.create_role(name=role_name, permissions=permissions, mentionable=mentionable)
+        new_role = await guild.create_role(name=role_name, **kargs)
         print(f'Creating a new role: {role_name}')
         return new_role
     else:
-        await existing_role.edit(permissions=permissions, mentionable=mentionable)
+        await existing_role.edit(**kargs)
         print(f'Role {role_name} already exists!')
         return existing_role
 
@@ -194,7 +194,6 @@ async def create_group(ctx):
     await aux_create_group(ctx)
 
 @bot.command(name='create-many-groups', help='Create N new lab groups.')
-@commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def create_many_groups(ctx, num_groups: int):
@@ -224,6 +223,8 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
 
 
 @bot.command(name='delete-group', help='Delete a lab group. Need to provide the group number.')
+@commands.cooldown(rate=1, per=5)
+@commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def delete_group(ctx, group: Union[int, str]):
     await aux_delete_group(ctx, group)
@@ -396,6 +397,7 @@ async def raise_hand(ctx):
 ####################################################################
 """
 
+"""
 async def see_permissions(member, channel):
     print(f'Permission of {member} in {channel}')
     for perm, value in channel.permissions_for(member):
@@ -413,14 +415,10 @@ async def get_permissions(ctx):
     permission = discord.Permissions(permissions=0)
     overwrite = discord.PermissionOverwrite()
     overwrite.send_messages = False
-    """    
-    overwrite['send_messages'] = False
-    overwrite['read_messages'] = True
-    """
     # await see_permissions(guild.me, guild)
     for perm, value in guild.permissions_for(flo):
         print(perm, value, sep='\t')
-
+"""
 
 @bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
 async def nine_nine(ctx):
@@ -450,6 +448,7 @@ async def salute(ctx):
     await ctx.author.dm_channel.send(
         f'Hi {ctx.author.name}, welcome to my Discord server!'
     )
+
 
 """
 ####################################################################
