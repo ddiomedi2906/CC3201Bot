@@ -45,8 +45,14 @@ def message_member_joined_group(member_name: str, group_name: str) -> str:
 def message_mention_member_when_join_group(member: discord.Member, group_name: str) -> str:
     return f"**{member.mention}** has joined to **{group_name}!**"
 
+def message_member_already_in_group(member_name: str, group_name: str) -> str:
+    return f"**{member_name}** is already part of **{group_name}!**"
+
 def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has left **{group_name}!**"
+
+def message_member_not_in_group(member_name: str, group_name: str) -> str:
+    return f"**{member_name}** is not part of **{group_name}!**"
 
 """
 ####################################################################

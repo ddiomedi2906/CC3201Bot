@@ -28,6 +28,8 @@ GENERAL_CHANNEL_NAME = os.getenv('GENERAL_CHANNEL_NAME')
 
 bot = commands.Bot(command_prefix='!')
 
+STREAM = 512
+
 
 """
 ####################################################################
@@ -39,7 +41,7 @@ bot = commands.Bot(command_prefix='!')
 @bot.event
 async def on_ready():
     # guild = discord.utils.find(lambda g: g.name == GUILD, client.guilds)
-    guild = discord.utils.get(bot.guilds, name=GUILD)
+    guild = discord.utils.get(bot.guilds, id=int(GUILD_ID))
     print(
         f'{bot.user} is connected to the following guild:\n'
         f'{guild.name}(id: {guild.id})'
@@ -48,6 +50,8 @@ async def on_ready():
     print(f'Guild Members:\n - {members}')
     all_allow = discord.Permissions.all()
     text_and_voice_allow = discord.Permissions(66582848)
+    for permission, value in text_and_voice_allow:
+        print(f"{value:5}\t{permission}")
     await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
     await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
     await create_new_role(guild, TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.purple(), hoist=True, mentionable=True)
@@ -158,9 +162,9 @@ async def update_previous_lab_groups_permission(role: discord.Role, category: di
     guild = category.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name) and c != category, guild.categories))
     default = discord.Permissions()
-    only_read_and_speak = discord.Permissions(63371584)
+    allow_text_voice_stream = discord.Permissions(63371584|STREAM)
     for lab_group in existing_lab_groups:
-        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(default, only_read_and_speak))
+        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(default, allow_text_voice_stream))
 
 
 async def aux_create_group(ctx):
@@ -187,12 +191,12 @@ async def aux_create_group(ctx):
         try:
             # Create new role
             new_role = await create_new_role(guild, new_role_name, mentionable=True)
-            allow_text_and_voice = discord.Permissions(66582848)
+            allow_text_voice_stream = discord.Permissions(66582848|STREAM)
             # Set lab group permissions
             default = discord.Permissions()
             only_read_and_speak = discord.Permissions(63371584)
             overwrites = {role: discord.PermissionOverwrite.from_pair(default, only_read_and_speak) for role in guild.roles}
-            overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_and_voice, default)
+            overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
             # Create new lab group
             print(f'Creating a new category: {new_category_name}')
             new_category = await guild.create_category_channel(new_category_name , overwrites=overwrites)
@@ -261,7 +265,6 @@ async def delete_all_groups(ctx):
     guild = ctx.guild
     for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
         if re.search(r"Group[\s]+[0-9]+", category.name):
-            print(category.name)
             await aux_delete_group(ctx, category.name)
 
 """
@@ -270,10 +273,14 @@ async def delete_all_groups(ctx):
 ####################################################################
 """
 
+@bot.group(name='labgroup', invoke_without_command=True)
+async def labgroup_command(ctx):
+    await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
 
-@bot.command(name='join-group', help='Join to a group. Need to provide the group number.')
+
+@labgroup_command.command(name='join', help='Join to a group. Need to provide the group number.')
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def join_group(ctx, group: Union[int, str], member_name: Optional[str] = None):
+async def group_join_subcommand(ctx, group: Union[int, str], member_name: Optional[str] = None):
     guild = ctx.guild
     if discord.utils.get(ctx.author.roles, name=HEAD_TA_ROLE_NAME) and member_name:
         member = discord.utils.get(guild.members, name=member_name)
@@ -288,7 +295,8 @@ async def join_group(ctx, group: Union[int, str], member_name: Optional[str] = N
     role_name = get_role_name(group) if type(group) == int else group
     lab_group_name = get_lab_group_name(group) if type(group) == int else group
     role = discord.utils.get(guild.roles, name=role_name)
-    if role:
+    member_role = discord.utils.get(member.roles, name=role_name)
+    if role and not member_role:
         await member.add_roles(role)
         print(f'Role "{role}" assigned to {member}')
         await ctx.send(message_member_joined_group(member.name, lab_group_name))
@@ -301,13 +309,15 @@ async def join_group(ctx, group: Union[int, str], member_name: Optional[str] = N
         voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
         if voice_channel and member.voice and member.voice.channel:
             await member.move_to(voice_channel)
+    elif member_role:
+        await ctx.send(bot_messages.message_member_already_in_group(member.name, lab_group_name))
     else:
         await ctx.send(message_lab_group_not_exists(lab_group_name))
 
 
-@bot.command(name='leave-group', help='Leave a group. Need to provide the group number.')
+@labgroup_command.command(name='leave', help='Leave a group. Need to provide the group number.')
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = None):
+async def group_leave_subcommand(ctx, group: Union[int, str], member_name: Optional[str] = None):
     guild = ctx.guild
     if discord.utils.get(ctx.author.roles, name=HEAD_TA_ROLE_NAME) and member_name:
         member = discord.utils.get(guild.members, name=member_name)
@@ -322,17 +332,21 @@ async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = 
     role_name = get_role_name(group) if type(group) == int else group
     lab_group_name = get_lab_group_name(group) if type(group) == int else group
     role = discord.utils.get(guild.roles, name=role_name)
-    if role:
+    member_role = discord.utils.get(member.roles, name=role_name)
+    if member_role and role:
         await member.remove_roles(role)
         print(f'Role "{role}" removed to {member}')
-        text_channel_name = get_voice_channel_name(group) if type(group) == int else group
-        text_channel = discord.utils.get(guild.channels, name=text_channel_name)
-        await ctx.send(message_member_left_group(member.name, lab_group_name))
         # Disconnect from the group voice channel if connected to it
         voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
         voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
         if voice_channel and member.voice and member.voice.channel == voice_channel:
             await member.move_to()
+        await ctx.send(message_member_left_group(member.name, lab_group_name))
+        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+        if general_channel:
+            await general_channel.send(message_member_left_group(member.name, lab_group_name))
+    elif role:
+        await ctx.send(bot_messages.message_member_not_in_group(member.name, lab_group_name))
     else:
         await ctx.send(message_lab_group_not_exists(lab_group_name))
 
