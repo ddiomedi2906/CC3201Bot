@@ -1,6 +1,7 @@
 # Bot's messages
 from typing import List
 
+import discord
 
 """
 ####################################################################
@@ -37,6 +38,9 @@ def message_group_deleted(category_name: str) -> str:
 
 def message_member_joined_group(member_name: str, group_name: str) -> str:
     return f"**{member_name} has joined to {group_name}!**"
+
+def message_mention_member_when_join_group(member: discord.Member, group_name: str) -> str:
+    return f"**{member.mention} has joined to {group_name}!**"
 
 def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name} has left {group_name}!**"
@@ -81,3 +85,12 @@ def message_no_members() -> str:
 
 def message_no_groups() -> str:
     return f"No groups created yet"
+
+"""
+####################################################################
+######################### HELP MESSAGES ############################
+####################################################################
+"""
+
+def message_call_for_help(group_name: str, available_members: List[discord.Member]) -> str:
+    return f"{group_name} is calling for help. {' '.join([member.mention for member in available_members])}"
