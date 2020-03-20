@@ -5,9 +5,10 @@ import re
 from typing import Union, Optional, List
 
 import discord
-from discord import Role, Permissions
+from discord import Role
 from discord.ext import commands
 from dotenv import load_dotenv
+import unicodedata
 
 import bot_messages
 from bot_messages import message_group_created, message_unexpected_error, message_group_deleted, message_default_error, \
@@ -15,20 +16,23 @@ from bot_messages import message_group_created, message_unexpected_error, messag
     message_command_not_allowed, message_member_not_exists, message_member_joined_group, message_member_left_group, \
     message_call_for_help, message_mention_member_when_join_group, message_lab_group_not_exists, \
     message_asking_for_help, message_can_not_get_help_error, message_no_one_available_error
+from emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
+# GUILD = os.getenv('DISCORD_GUILD')
 GUILD_ID = os.getenv('DISCORD_GUILD_ID')
 PROFESSOR_ROLE_NAME = os.getenv('PROFESSOR_ROLE_NAME')
 HEAD_TA_ROLE_NAME = os.getenv('AUXILIAR_ROLE_NAME')
 TA_ROLE_NAME = os.getenv('ASSISTANT_ROLE_NAME')
 STUDENT_ROLE_NAME = os.getenv('STUDENT_ROLE_NAME')
 GENERAL_CHANNEL_NAME = os.getenv('GENERAL_CHANNEL_NAME')
+MAX_STUDENTS_PER_GROUP = 3
 
 bot = commands.Bot(command_prefix='!')
 
 STREAM = 512
+VIEW_WRITE_SPEAK = 66583872
 
 
 """
@@ -85,19 +89,27 @@ async def on_message(message):
     if re.search(r"!.+?", message.content):
         await bot.process_commands(message)
 
+
 @bot.event
 async def on_reaction_add(reaction, user):
     message = reaction.message
     if message.author == bot.user and re.search(r"calling for help", message.content):
         for member in message.mentions:
-            if member == user and member_is_available(member):
-                # print(re.match(r"Group\s+(\d+)", message.content).group(1))
-                group = int(re.sub(r"\*\*Group\s+(\d+).*", r"\1", message.content))
+            if member == user and existing_member_lab_role(member) is None:
+                group = int(re.match(r"\*\*Group[\s]+(\d+).*", message.content).group(1))
                 group_name = get_lab_group_name(group)
                 lab_group = discord.utils.get(user.guild.channels, name=group_name)
                 await go_for_help(member, lab_group, group)
                 await reaction.message.channel.send(bot_messages.message_help_on_the_way(member))
                 return
+    if message.author == bot.user:
+        return
+    emoji = reaction.emoji
+    print(emoji, get_unicode_from_emoji(emoji))
+    if same_emoji(emoji, 'slight_smile'):
+        await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
+        await message.channel.send(emoji + emoji + emoji)
+        # await message.channel.send(emoji + emoji + emoji)
 
 
 @bot.event
@@ -111,13 +123,17 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.errors.CheckFailure):
         print(error)
         await ctx.send('You do not have the correct role for this command.')
+    elif isinstance(error, commands.errors.CommandNotFound):
+        print(error)
+        await ctx.send(error)
     else:
+        await ctx.send('You do not have the correct role for this command.')
         print(error)
 
 
 """
 ####################################################################
-######################### HELP FUNCTIONS #####################
+########################## HELP FUNCTIONS ##########################
 ####################################################################
 """
 
@@ -133,6 +149,51 @@ def get_text_channel_name(number: int):
 def get_voice_channel_name(number: int):
     return f"voice-channel {number}"
 
+def existing_group_number(member: discord.Member) -> Optional[int]:
+    member_roles = member.roles
+    for role in member_roles:
+        if re.search("member-group\s+[0-9]+", role.name):
+            return int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+    return None
+
+def existing_member_lab_role(member: discord.Member) -> Optional[Role]:
+    member_roles = member.roles
+    for role in member_roles:
+        if re.search("member-group\s+[0-9]+", role.name):
+            return role
+    return None
+
+def existing_member_lab_group(member: discord.Member) -> Optional[discord.CategoryChannel]:
+    member_roles = member.roles
+    for role in member_roles:
+        if re.search("member-group\s+[0-9]+", role.name):
+            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+            return discord.utils.get(member.guild.categories, name=get_lab_group_name(num))
+    return None
+
+def existing_member_lab_text_channel(member: discord.Member) -> Optional[discord.TextChannel]:
+    member_roles = member.roles
+    for role in member_roles:
+        if re.search("member-group\s+[0-9]+", role.name):
+            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+            return discord.utils.get(member.guild.channels, name=get_text_channel_name(num))
+    return None
+
+def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discord.VoiceChannel]:
+    member_roles = member.roles
+    for role in member_roles:
+        if re.search("member-group\s+[0-9]+", role.name):
+            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+            return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
+    return None
+
+
+"""
+####################################################################
+################### CREATE/DELETE GROUP COMMANDS ###################
+####################################################################
+"""
+
 async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role:
     existing_role = discord.utils.get(guild.roles, name=role_name)
     if not existing_role:
@@ -144,27 +205,14 @@ async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role
         print(f'Role {role_name} already exists!')
         return existing_role
 
-def member_is_available(member: discord.Member) -> bool:
-    member_roles = member.roles
-    for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            return False
-    return True
-
-
-"""
-####################################################################
-################### CREATE/DELETE GROUP COMMANDS ###################
-####################################################################
-"""
 
 async def update_previous_lab_groups_permission(role: discord.Role, category: discord.CategoryChannel):
     guild = category.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name) and c != category, guild.categories))
     default = discord.Permissions()
-    allow_text_voice_stream = discord.Permissions(63371584|STREAM)
+    can_not_view_channel = discord.Permissions(VIEW_WRITE_SPEAK)
     for lab_group in existing_lab_groups:
-        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(default, allow_text_voice_stream))
+        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(default, can_not_view_channel))
 
 
 async def aux_create_group(ctx):
@@ -194,8 +242,8 @@ async def aux_create_group(ctx):
             allow_text_voice_stream = discord.Permissions(66582848|STREAM)
             # Set lab group permissions
             default = discord.Permissions()
-            only_read_and_speak = discord.Permissions(63371584)
-            overwrites = {role: discord.PermissionOverwrite.from_pair(default, only_read_and_speak) for role in guild.roles}
+            can_not_view_channel = discord.Permissions(VIEW_WRITE_SPEAK)
+            overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel) for role in guild.roles}
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
             # Create new lab group
             print(f'Creating a new category: {new_category_name}')
@@ -207,26 +255,14 @@ async def aux_create_group(ctx):
             await guild.create_text_channel(text_channel_name, category=new_category)
             await guild.create_voice_channel(voice_channel_name, category=new_category)
             # Success message
-            await ctx.send(message_group_created(new_category_name, next_num))
+            general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+            if general_channel:
+                await general_channel.send(message_group_created(new_category_name, next_num))
         except Exception as e:
             print(e)
             await ctx.send(message_unexpected_error("create-group"))
             await aux_delete_group(ctx, next_num, show_bot_message=False)
             raise e
-
-
-@bot.command(name='create-group', help='Create a new lab group.')
-@commands.max_concurrency(number=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
-async def create_group(ctx):
-    await aux_create_group(ctx)
-
-@bot.command(name='create-many-groups', help='Create N new lab groups.')
-@commands.max_concurrency(number=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def create_many_groups(ctx, num_groups: int):
-    for _ in range(num_groups):
-        await aux_create_group(ctx)
 
 
 async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool = True):
@@ -247,10 +283,33 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
     if role:
         await role.delete()
     if success and show_bot_message:
-        await ctx.send(message_group_deleted(category_name))
+        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+        if general_channel:
+            await general_channel.send(message_group_deleted(category_name))
+
+"""
+####################################################################
+################### CREATE/DELETE GROUP COMMANDS ###################
+####################################################################
+"""
 
 
-@bot.command(name='delete-group', help='Delete a lab group. Need to provide the group number.')
+@bot.command(name='create-group', help='Create a new lab group.', hidden=True)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def create_group(ctx):
+    await aux_create_group(ctx)
+
+
+@bot.command(name='create-many-groups', help='Create N new lab groups.', hidden=True)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def create_many_groups(ctx, num_groups: int):
+    for _ in range(num_groups):
+        await aux_create_group(ctx)
+
+
+@bot.command(name='delete-group', help='Delete a lab group. Need to provide the group number.', hidden=True)
 @commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
@@ -258,7 +317,7 @@ async def delete_group(ctx, group: Union[int, str]):
     await aux_delete_group(ctx, group)
 
 
-@bot.command(name='delete-all-groups', help='Delete all lab groups.')
+@bot.command(name='delete-all-groups', help='Delete all lab groups.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def delete_all_groups(ctx):
@@ -269,86 +328,107 @@ async def delete_all_groups(ctx):
 
 """
 ####################################################################
+##################### JOIN/LEAVE GROUP FUNCTIONS ###################
+####################################################################
+"""
+
+def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
+    guild = ctx.guild
+    existing_role = discord.utils.get(guild.roles, name=get_role_name(group) if type(group) == int else group)
+    student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
+    if not existing_role:
+        return []
+    return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
+
+
+async def join_group(ctx, member: discord.Member, group: Union[int, str]):
+    guild = ctx.guild
+    new_role = discord.utils.get(guild.roles, name=get_role_name(group) if type(group) == int else group)
+    new_lab_group_name = get_lab_group_name(group) if type(group) == int else group
+    existing_lab_group = existing_member_lab_role(member)
+    if existing_lab_group:
+        await ctx.send(bot_messages.message_member_already_in_group(member.name, existing_lab_group.name))
+    elif not new_role:
+        await ctx.send(message_lab_group_not_exists(new_lab_group_name))
+    elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
+        await ctx.send(bot_messages.message_max_members_in_group_error(new_lab_group_name, MAX_STUDENTS_PER_GROUP))
+    else:
+        await member.add_roles(new_role)
+        print(f'Role "{new_role}" assigned to {member}')
+        # Move to voice channel if connected
+        voice_channel = discord.utils.get(guild.channels,
+                                          name=get_voice_channel_name(group) if type(group) == int else group)
+        if voice_channel and member.voice and member.voice.channel:
+            await member.move_to(voice_channel)
+        # Message to group text channel
+        text_channel = discord.utils.get(guild.channels,
+                                         name=get_text_channel_name(group) if type(group) == int else group)
+        if text_channel:
+            await text_channel.send(message_mention_member_when_join_group(member, new_lab_group_name))
+        # Message to general channel
+        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+        if general_channel:
+            await general_channel.send(message_member_joined_group(member.name, new_lab_group_name))
+
+
+
+async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
+    guild = ctx.guild
+    existing_lab_role = existing_member_lab_role(member)
+    if existing_lab_role:
+        await member.remove_roles(existing_lab_role)
+        print(f'Role "{existing_lab_role}" removed to {member}')
+        # Disconnect from the group voice channel if connected to it
+        voice_channel = existing_member_lab_voice_channel(member)
+        if voice_channel and member.voice and member.voice.channel == voice_channel:
+            await member.move_to(None)
+        # Message to group text channel
+        text_channel = existing_member_lab_text_channel(member)
+        if text_channel:
+            await text_channel.send(message_member_left_group(member.name, existing_lab_role.name))
+        # Message to general channel
+        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+        if general_channel:
+            await general_channel.send(message_member_left_group(member.name, existing_lab_role.name))
+    elif show_not_in_group_error:
+        await ctx.send(bot_messages.message_member_not_in_group(member.name))
+
+"""
+####################################################################
 ##################### JOIN/LEAVE GROUP COMMANDS ####################
 ####################################################################
 """
 
-@bot.group(name='labgroup', invoke_without_command=True)
+@bot.group(name='labgroup', alias=['group', 'lg'], invoke_without_command=True)
 async def labgroup_command(ctx):
     await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
 
-
-@labgroup_command.command(name='join', help='Join to a group. Need to provide the group number.')
+@labgroup_command.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def group_join_subcommand(ctx, group: Union[int, str], member_name: Optional[str] = None):
+async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]):
     guild = ctx.guild
-    if discord.utils.get(ctx.author.roles, name=HEAD_TA_ROLE_NAME) and member_name:
-        member = discord.utils.get(guild.members, name=member_name)
-    elif member_name:
-        await ctx.send(message_command_not_allowed())
-        return
-    else:
-        member = ctx.author
+    member = discord.utils.get(guild.members, name=member_name)
     if not member:
         await ctx.send(message_member_not_exists(member_name))
-        return
-    role_name = get_role_name(group) if type(group) == int else group
-    lab_group_name = get_lab_group_name(group) if type(group) == int else group
-    role = discord.utils.get(guild.roles, name=role_name)
-    member_role = discord.utils.get(member.roles, name=role_name)
-    if role and not member_role:
-        await member.add_roles(role)
-        print(f'Role "{role}" assigned to {member}')
-        await ctx.send(message_member_joined_group(member.name, lab_group_name))
-        text_channel_name = get_text_channel_name(group) if type(group) == int else group
-        text_channel = discord.utils.get(guild.channels, name=text_channel_name)
-        if text_channel:
-            await text_channel.send(message_mention_member_when_join_group(member, lab_group_name))
-        # Move to voice channel if connected
-        voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
-        voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
-        if voice_channel and member.voice and member.voice.channel:
-            await member.move_to(voice_channel)
-    elif member_role:
-        await ctx.send(bot_messages.message_member_already_in_group(member.name, lab_group_name))
+    elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
+        await ctx.send(
+            bot_messages.message_max_members_in_group_error(get_lab_group_name(group) if type(group) == int else group,
+                                                            MAX_STUDENTS_PER_GROUP))
     else:
-        await ctx.send(message_lab_group_not_exists(lab_group_name))
+        await leave_group(ctx, member, show_not_in_group_error=False)
+        await join_group(ctx, member, group)
+
+
+@labgroup_command.command(name='join', help='Join to a group. Need to provide the group number.')
+@commands.has_any_role(STUDENT_ROLE_NAME)
+async def group_join_subcommand(ctx, group: Union[int, str]):
+    await join_group(ctx, ctx.author, group)
 
 
 @labgroup_command.command(name='leave', help='Leave a group. Need to provide the group number.')
-@commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
+@commands.has_any_role(STUDENT_ROLE_NAME)
 async def group_leave_subcommand(ctx, group: Union[int, str], member_name: Optional[str] = None):
-    guild = ctx.guild
-    if discord.utils.get(ctx.author.roles, name=HEAD_TA_ROLE_NAME) and member_name:
-        member = discord.utils.get(guild.members, name=member_name)
-    elif member_name:
-        await ctx.send(message_command_not_allowed())
-        return
-    else:
-        member = ctx.author
-    if not member:
-        await ctx.send(message_member_not_exists(member_name))
-        return
-    role_name = get_role_name(group) if type(group) == int else group
-    lab_group_name = get_lab_group_name(group) if type(group) == int else group
-    role = discord.utils.get(guild.roles, name=role_name)
-    member_role = discord.utils.get(member.roles, name=role_name)
-    if member_role and role:
-        await member.remove_roles(role)
-        print(f'Role "{role}" removed to {member}')
-        # Disconnect from the group voice channel if connected to it
-        voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
-        voice_channel = discord.utils.get(guild.channels, name=voice_channel_name)
-        if voice_channel and member.voice and member.voice.channel == voice_channel:
-            await member.move_to()
-        await ctx.send(message_member_left_group(member.name, lab_group_name))
-        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
-        if general_channel:
-            await general_channel.send(message_member_left_group(member.name, lab_group_name))
-    elif role:
-        await ctx.send(bot_messages.message_member_not_in_group(member.name, lab_group_name))
-    else:
-        await ctx.send(message_lab_group_not_exists(lab_group_name))
+    await leave_group(ctx, ctx.author)
 
 """
 ####################################################################
@@ -356,26 +436,30 @@ async def group_leave_subcommand(ctx, group: Union[int, str], member_name: Optio
 ####################################################################
 """
 
-async def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message: bool = True):
+def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message: bool = True) -> Optional[str]:
     group = int(re.sub(r"Group[\s]+([0-9]+)", r"\1", group)) if type(group) == str else group
     guild = ctx.guild
     role_name = get_role_name(group)
     existing_role = discord.utils.get(guild.roles, name=role_name)
     if not existing_role:
-        await ctx.send(message_group_not_exists_error(group))
+        return message_group_not_exists_error(group)
     elif not existing_role.members and show_empty_error_message:
-        await ctx.send(message_no_members())
+        return message_no_members()
     elif existing_role.members:
-        await ctx.send(message_list_group_members(group, existing_role.members))
+        return message_list_group_members(group, existing_role.members)
+    else:
+        return None
 
 
-@bot.command(name='group-members', help="List lab group's members.")
+@bot.command(name='group-members', help="List lab group's members.", hidden=True)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_group_members(ctx, group: int):
-    await aux_get_group_members(ctx, group)
+    message = aux_get_group_members(ctx, group)
+    if message:
+        await ctx.send(message)
 
 
-@bot.command(name='lab-list', help='List all group with its members.')
+@bot.command(name='lab-list', help='List all group with its members.', hidden=True)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
     guild = ctx.guild
@@ -383,22 +467,27 @@ async def get_lab_list(ctx):
     if not existing_lab_groups:
         await ctx.send(message_no_groups())
         return
+    list_string = []
     for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
-        await aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
+        message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
+        if message:
+            list_string.append(message)
+    if list_string:
+        await ctx.send("Lab list:\n" + "\n".join(list_string))
 
 
 """
 ####################################################################
-##################### CALL-FOR-HELP COMMANDS #######################
+##################### CALL-FOR-HELP FUNCTIONS #######################
 ####################################################################
 """
 
 def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
     if not role:
         return []
-    role_members = role.members
+    online_role_members = [member for member in role.members if member.status.online]
     available_members = []
-    for member in role_members:
+    for member in online_role_members:
         member_roles = member.roles
         available = True
         for role in member_roles:
@@ -409,7 +498,7 @@ def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
             available_members.append(member)
     return available_members
 
-def get_teaching_team_roles(guild):
+def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
     return list(filter(lambda r: r.name in [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME], guild.roles))
 
 
@@ -423,22 +512,6 @@ async def ask_for_help(member: discord.Member, group_name: str, general_channel:
     return len(available_team)
 
 
-@bot.command(name='raise-hand', help='Raise your virtual hand asking for any help.')
-@commands.has_any_role(STUDENT_ROLE_NAME)
-async def raise_hand(ctx):
-    group_role = discord.utils.find(lambda r: re.search(r"member-group\s+\d+", r.name), ctx.author.roles)
-    group = int(re.sub(r"member-group\s+(\d+)", r"\1", group_role.name))
-    group_name = get_lab_group_name(group)
-    general_channel = discord.utils.get(ctx.author.guild.channels, name=GENERAL_CHANNEL_NAME)
-    if general_channel:
-        available = await ask_for_help(ctx.author, group_name, general_channel)
-        if available:
-            await ctx.channel.send(message_asking_for_help())
-        else:
-            await ctx.channel.send(message_no_one_available_error())
-    else:
-        await ctx.channel.send(message_can_not_get_help_error())
-
 async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
     text_channel_name = get_text_channel_name(group)
     text_channel = discord.utils.get(lab_group.channels, name=text_channel_name)
@@ -448,6 +521,30 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
     voice_channel = discord.utils.get(lab_group.channels, name=voice_channel_name)
     if voice_channel and member.voice and member.voice.channel:
         await member.move_to(voice_channel)
+
+"""
+####################################################################
+##################### CALL-FOR-HELP COMMANDS #######################
+####################################################################
+"""
+
+
+@bot.command(name='raise-hand', alias=[get_unicode_emoji_from_alias('raised_hand')], help='Raise your virtual hand asking for any help.')
+@commands.cooldown(rate=1, per=2)
+@commands.has_any_role(STUDENT_ROLE_NAME)
+async def raise_hand(ctx):
+    group_role = discord.utils.find(lambda r: re.search(r"member-group\s+\d+", r.name), ctx.author.roles)
+    # group = int(re.sub(r"member-group\s+(\d+)", r"\1", group_role.name))
+    group_name = member_lab_group_name(ctx.author)
+    general_channel = discord.utils.get(ctx.author.guild.channels, name=GENERAL_CHANNEL_NAME)
+    if general_channel and group_name:
+        available = await ask_for_help(ctx.author, group_name, general_channel)
+        if available:
+            await ctx.channel.send(message_asking_for_help())
+        else:
+            await ctx.channel.send(message_no_one_available_error())
+    elif group_name:
+        await ctx.channel.send(message_can_not_get_help_error())
 
 
 """
@@ -472,7 +569,7 @@ async def nine_nine(ctx):
     await ctx.send(response)
 
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
-async def roll(ctx, number_of_dice: int, number_of_sides: int=6):
+async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
     dice = [
         str(random.choice(range(1, number_of_sides + 1)))
         for _ in range(number_of_dice)
@@ -481,10 +578,11 @@ async def roll(ctx, number_of_dice: int, number_of_sides: int=6):
 
 @bot.command(name='salute', help='Say hello to this friendly bot.')
 async def salute(ctx):
-    await ctx.author.create_dm()
-    await ctx.author.dm_channel.send(
-        f'Hi {ctx.author.name}, welcome to my Discord server!'
-    )
+    await ctx.send(get_unicode_emoji_from_alias('wave'))
+    # await ctx.author.create_dm()
+    #await ctx.author.dm_channel.send(
+    #    f'Hi {ctx.author.name}, welcome to my Discord server!'
+    #)
 
 
 """

@@ -34,7 +34,7 @@ def message_lab_group_not_exists(group_name: str) -> str:
 """
 
 def message_group_created(category_name: str, group: int) -> str:
-    return f"New **{category_name}** created! To join use the following command: `!join-group {group}`"
+    return f"New **{category_name}** created! To join use the following command: `!labgroup join {group}`"
 
 def message_group_deleted(category_name: str) -> str:
     return f"**{category_name}** deleted!"
@@ -48,11 +48,14 @@ def message_mention_member_when_join_group(member: discord.Member, group_name: s
 def message_member_already_in_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** is already part of **{group_name}!**"
 
+def message_max_members_in_group_error(group_name: str, max_size: int) -> str:
+    return f"**{group_name}!** has reached its maximum limit! (_{max_size}_)"
+
 def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has left **{group_name}!**"
 
-def message_member_not_in_group(member_name: str, group_name: str) -> str:
-    return f"**{member_name}** is not part of **{group_name}!**"
+def message_member_not_in_group(member_name: str) -> str:
+    return f"**{member_name}** is not part group!"
 
 """
 ####################################################################
@@ -82,7 +85,13 @@ def aux_map_letter_to_emoji(letter: str) -> str:
     return f":{LETTER_EMOJI_PREFIX}{letter}:"
 
 def get_emoji_group(number: int, letter: str = 'g') -> str:
-    L = [aux_map_number_to_emoji(int(digit)) for digit in list(str(number).split())]
+    # L = [aux_map_number_to_emoji(int(digit)) for digit in list(str(number).split())]
+    L = []
+    while number >= 10:
+        L.append(aux_map_number_to_emoji(number%10))
+        number //= 10
+    L.append(aux_map_number_to_emoji(number))
+    L.reverse()
     return f"{aux_map_letter_to_emoji(letter)} {' '.join(L)}"
 
 def message_list_group_members(group: int, members: List) -> str:
