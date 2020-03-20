@@ -96,4 +96,17 @@ def message_no_groups() -> str:
 """
 
 def message_call_for_help(group_name: str, available_members: List[discord.Member]) -> str:
-    return f"**{group_name}** is calling for help. \n {' '.join([member.mention for member in available_members])}"
+    members_string = ' '.join([member.mention for member in available_members]) if available_members else "Nobody available :("
+    return f"**{group_name}** is calling for help. \n {members_string}"
+
+def message_help_on_the_way(member: discord.Member, show_mention: bool = False) -> str:
+    return f"**{member.mention if show_mention else member.name}** on the way!"
+
+def message_asking_for_help() -> str:
+    return f"Sure, I will bring someone."
+
+def message_no_one_available_error() -> str:
+    return f"Sorry, there is no one available right now. Try later."
+
+def message_can_not_get_help_error() -> str:
+    return "Sorry, I can't do that right now."

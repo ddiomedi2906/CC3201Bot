@@ -9,10 +9,12 @@ from discord import Role, Permissions
 from discord.ext import commands
 from dotenv import load_dotenv
 
+import bot_messages
 from bot_messages import message_group_created, message_unexpected_error, message_group_deleted, message_default_error, \
     message_list_group_members, message_group_not_exists_error, message_no_groups, message_no_members, \
     message_command_not_allowed, message_member_not_exists, message_member_joined_group, message_member_left_group, \
-    message_call_for_help, message_mention_member_when_join_group, message_lab_group_not_exists
+    message_call_for_help, message_mention_member_when_join_group, message_lab_group_not_exists, \
+    message_asking_for_help, message_can_not_get_help_error, message_no_one_available_error
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -22,6 +24,7 @@ PROFESSOR_ROLE_NAME = os.getenv('PROFESSOR_ROLE_NAME')
 HEAD_TA_ROLE_NAME = os.getenv('AUXILIAR_ROLE_NAME')
 TA_ROLE_NAME = os.getenv('ASSISTANT_ROLE_NAME')
 STUDENT_ROLE_NAME = os.getenv('STUDENT_ROLE_NAME')
+GENERAL_CHANNEL_NAME = os.getenv('GENERAL_CHANNEL_NAME')
 
 bot = commands.Bot(command_prefix='!')
 
@@ -78,6 +81,20 @@ async def on_message(message):
     if re.search(r"!.+?", message.content):
         await bot.process_commands(message)
 
+@bot.event
+async def on_reaction_add(reaction, user):
+    message = reaction.message
+    if message.author == bot.user and re.search(r"calling for help", message.content):
+        for member in message.mentions:
+            if member == user and member_is_available(member):
+                # print(re.match(r"Group\s+(\d+)", message.content).group(1))
+                group = int(re.sub(r"\*\*Group\s+(\d+).*", r"\1", message.content))
+                group_name = get_lab_group_name(group)
+                lab_group = discord.utils.get(user.guild.channels, name=group_name)
+                await go_for_help(member, lab_group, group)
+                await reaction.message.channel.send(bot_messages.message_help_on_the_way(member))
+                return
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -122,6 +139,13 @@ async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role
         await existing_role.edit(**kargs)
         print(f'Role {role_name} already exists!')
         return existing_role
+
+def member_is_available(member: discord.Member) -> bool:
+    member_roles = member.roles
+    for role in member_roles:
+        if re.search("member-group\s+[0-9]+", role.name):
+            return False
+    return True
 
 
 """
@@ -235,7 +259,7 @@ async def delete_group(ctx, group: Union[int, str]):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def delete_all_groups(ctx):
     guild = ctx.guild
-    for category in guild.categories:
+    for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
         if re.search(r"Group[\s]+[0-9]+", category.name):
             print(category.name)
             await aux_delete_group(ctx, category.name)
@@ -301,6 +325,8 @@ async def leave_group(ctx, group: Union[int, str], member_name: Optional[str] = 
     if role:
         await member.remove_roles(role)
         print(f'Role "{role}" removed to {member}')
+        text_channel_name = get_voice_channel_name(group) if type(group) == int else group
+        text_channel = discord.utils.get(guild.channels, name=text_channel_name)
         await ctx.send(message_member_left_group(member.name, lab_group_name))
         # Disconnect from the group voice channel if connected to it
         voice_channel_name = get_voice_channel_name(group) if type(group) == int else group
@@ -373,13 +399,14 @@ def get_teaching_team_roles(guild):
     return list(filter(lambda r: r.name in [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME], guild.roles))
 
 
-async def ask_for_help(member: discord.Member, group_name: str, general_channel: discord.TextChannel):
+async def ask_for_help(member: discord.Member, group_name: str, general_channel: discord.TextChannel) -> int:
     guild = member.guild
     TT_roles = get_teaching_team_roles(guild)
     available_team = []
     for role in TT_roles:
         available_team.extend(get_available_members_from_role(role))
     await general_channel.send(message_call_for_help(group_name, available_team))
+    return len(available_team)
 
 
 @bot.command(name='raise-hand', help='Raise your virtual hand asking for any help.')
@@ -388,39 +415,35 @@ async def raise_hand(ctx):
     group_role = discord.utils.find(lambda r: re.search(r"member-group\s+\d+", r.name), ctx.author.roles)
     group = int(re.sub(r"member-group\s+(\d+)", r"\1", group_role.name))
     group_name = get_lab_group_name(group)
-    general_channel = discord.utils.get(ctx.author.guild.channels, name="general")
+    general_channel = discord.utils.get(ctx.author.guild.channels, name=GENERAL_CHANNEL_NAME)
     if general_channel:
-        await ask_for_help(ctx.author, group_name, general_channel)
+        available = await ask_for_help(ctx.author, group_name, general_channel)
+        if available:
+            await ctx.channel.send(message_asking_for_help())
+        else:
+            await ctx.channel.send(message_no_one_available_error())
+    else:
+        await ctx.channel.send(message_can_not_get_help_error())
+
+async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
+    text_channel_name = get_text_channel_name(group)
+    text_channel = discord.utils.get(lab_group.channels, name=text_channel_name)
+    if text_channel:
+        await text_channel.send(bot_messages.message_help_on_the_way(member))
+    voice_channel_name = get_voice_channel_name(group)
+    voice_channel = discord.utils.get(lab_group.channels, name=voice_channel_name)
+    if voice_channel and member.voice and member.voice.channel:
+        await member.move_to(voice_channel)
+
+
 """
 ####################################################################
 ############################### MISC ###############################
 ####################################################################
 """
 
-"""
-async def see_permissions(member, channel):
-    print(f'Permission of {member} in {channel}')
-    for perm, value in channel.permissions_for(member):
-        print(perm, value, sep='\t')
-    print('-------------------------------------')
 
-
-@bot.command(name='get-permissions', help='Show (not in the chat) the member\'s permissinos.')
-@commands.has_role('auxiliar')
-async def get_permissions(ctx):
-    guild = ctx.guild
-    flo = discord.utils.get(guild.members, name="floflo")
-    channel = ctx.channel
-    print(flo)
-    permission = discord.Permissions(permissions=0)
-    overwrite = discord.PermissionOverwrite()
-    overwrite.send_messages = False
-    # await see_permissions(guild.me, guild)
-    for perm, value in guild.permissions_for(flo):
-        print(perm, value, sep='\t')
-"""
-
-@bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
+# @bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
 async def nine_nine(ctx):
     brooklyn_99_quotes = [
         'I\'m the human form of the 💯 emoji.',
