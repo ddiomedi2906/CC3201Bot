@@ -28,7 +28,11 @@ MAX_STUDENTS_PER_GROUP = 3
 bot = commands.Bot(command_prefix='!')
 
 STREAM = 512
-VIEW_WRITE_SPEAK = 66583872
+VIEW = 1024
+CHANGE_NICKNAME = 67108864
+PARTIAL_TEXT = 129088
+PARTIAL_VOICE = 49283072
+ALL_BUT_ADMIN_AND_GUILD = 1341652291
 
 
 """
@@ -49,12 +53,14 @@ async def on_ready():
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
     all_allow = discord.Permissions.all()
-    text_and_voice_allow = discord.Permissions(66582848)
-    for permission, value in text_and_voice_allow:
+    almost_all = discord.Permissions(ALL_BUT_ADMIN_AND_GUILD|STREAM)
+    text_and_voice_allow = discord.Permissions(PARTIAL_TEXT | PARTIAL_VOICE)
+    TEST = discord.Permissions(CHANGE_NICKNAME | PARTIAL_TEXT | PARTIAL_VOICE)
+    for permission, value in TEST:
         print(f"{value:5}\t{permission}")
     await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
     await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
-    await create_new_role(guild, TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.purple(), hoist=True, mentionable=True)
+    await create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True, mentionable=True)
     await create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(), hoist=True, mentionable=True)
 
 
@@ -145,6 +151,9 @@ def get_text_channel_name(number: int):
 def get_voice_channel_name(number: int):
     return f"voice-channel {number}"
 
+def all_existing_lab_roles(guild: discord.Guild) -> List[Role]:
+    return list(filter(lambda r: re.search("member-group\s+[0-9]+", r.name), guild.roles))
+
 def existing_group_number(member: discord.Member) -> Optional[int]:
     member_roles = member.roles
     for role in member_roles:
@@ -206,7 +215,7 @@ async def update_previous_lab_groups_permission(role: discord.Role, category: di
     guild = category.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name) and c != category, guild.categories))
     default = discord.Permissions()
-    can_not_view_channel = discord.Permissions(VIEW_WRITE_SPEAK)
+    can_not_view_channel = discord.Permissions(VIEW)
     for lab_group in existing_lab_groups:
         await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(default, can_not_view_channel))
 
@@ -235,11 +244,12 @@ async def aux_create_group(ctx):
         try:
             # Create new role
             new_role = await create_new_role(guild, new_role_name, mentionable=True)
-            allow_text_voice_stream = discord.Permissions(66582848|STREAM)
             # Set lab group permissions
             default = discord.Permissions()
-            can_not_view_channel = discord.Permissions(VIEW_WRITE_SPEAK)
-            overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel) for role in guild.roles}
+            allow_text_voice_stream = discord.Permissions(VIEW | PARTIAL_TEXT | PARTIAL_VOICE | STREAM)
+            can_not_view_channel = discord.Permissions(VIEW)
+            overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
+                          for role in all_existing_lab_roles(guild)}
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
             # Create new lab group
             print(f'Creating a new category: {new_category_name}')
