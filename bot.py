@@ -62,6 +62,7 @@ async def on_ready():
     await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
     await create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True, mentionable=True)
     await create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(), hoist=True, mentionable=True)
+    print("Ready to roll!")
 
 
 @bot.event
@@ -276,17 +277,22 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
     category_name = get_lab_group_name(group) if type(group) == int else group
     role_name = f"member-{category_name.lower()}"
     category = discord.utils.get(guild.categories, name=category_name)
+    role = discord.utils.get(guild.roles, name=role_name)
     success = False
     if category:
         channels = category.channels
+        for group_member in (role.members if role else []):
+            await leave_group(ctx, group_member, show_not_in_group_error=False)
         for channel in channels:
+            print(f'Deleting channel: {channel.name}')
             await channel.delete()
+        print(f'Deleting category: {category.name}')
         await category.delete()
         success = True
     elif show_bot_message:
         await ctx.send(btm.message_group_not_exists_error(category_name))
-    role = discord.utils.get(guild.roles, name=role_name)
     if role:
+        print(f'Deleting role: {role.name}')
         await role.delete()
     if success and show_bot_message:
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
@@ -433,6 +439,7 @@ async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def group_join_subcommand(ctx, group: Union[int, str]):
     await join_group(ctx, ctx.author, group)
+
 
 
 @labgroup_command.command(name='leave', help='Leave a group. Need to provide the group number.')
