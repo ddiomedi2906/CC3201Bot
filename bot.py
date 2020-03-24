@@ -152,14 +152,34 @@ def get_text_channel_name(number: int):
 def get_voice_channel_name(number: int):
     return f"voice-channel {number}"
 
+def get_lab_group(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.CategoryChannel]:
+    name = get_lab_group_name(group) if type(group) == int else group
+    return discord.utils.get(guild.categories, name=name)
+
+def get_lab_role(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.Role]:
+    name = get_role_name(group) if type(group) == int else group
+    return discord.utils.get(guild.roles, name=name)
+
+def get_lab_text_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.TextChannel]:
+    name = get_text_channel_name(group) if type(group) == int else group
+    return discord.utils.get(guild.channels, name=name)
+
+def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.VoiceChannel]:
+    name = get_voice_channel_name(group) if type(group) == int else group
+    return discord.utils.get(guild.channels, name=name)
+
 def all_existing_lab_roles(guild: discord.Guild) -> List[Role]:
     return list(filter(lambda r: re.search("member-group\s+[0-9]+", r.name), guild.roles))
+
+def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
+    return int(re.sub("member-group\s+([0-9]+)", r"\1", role.name)) if re.search("member-group\s+[0-9]+", role.name) else None
 
 def existing_group_number(member: discord.Member) -> Optional[int]:
     member_roles = member.roles
     for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            return int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+        group = existing_group_number_from_role(role)
+        if group:
+            return group
     return None
 
 def existing_member_lab_role(member: discord.Member) -> Optional[Role]:
