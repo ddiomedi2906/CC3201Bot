@@ -151,6 +151,16 @@ async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role
         print(f'Role {role_name} already exists!')
         return existing_role
 
+async def update_permission(
+        role: discord.Role,
+        lab_group: discord.CategoryChannel,
+        allow_mask: Optional[int] = None,
+        deny_mask: Optional[int] = None
+) -> None:
+    allow = discord.Permissions(allow_mask) if allow_mask else discord.Permissions()
+    denny = discord.Permissions(deny_mask) if deny_mask else discord.Permissions()
+    await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(allow, denny))
+
 
 async def update_previous_lab_groups_permission(
         role: discord.Role,
@@ -160,10 +170,8 @@ async def update_previous_lab_groups_permission(
 ) -> None:
     guild = category.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name) and c != category, guild.categories))
-    allow = discord.Permissions(allow_mask) if allow_mask else discord.Permissions()
-    denny = discord.Permissions(deny_mask) if deny_mask else discord.Permissions()
     for lab_group in existing_lab_groups:
-        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(allow, denny))
+        await update_permission(role, lab_group, allow_mask, deny_mask)
 
 
 async def aux_create_group(ctx):
@@ -459,7 +467,6 @@ async def show_permissions(ctx, group: int):
         lab_group_overwrites = existing_lab_group.overwrites
         existing_lab_role = hpf.get_lab_role(ctx.guild, group)
         if existing_lab_role and existing_lab_role in lab_group_overwrites:
-            # allow_role, deny_role = lab_group_overwrites[existing_lab_role].pairs
             for permission, value in lab_group_overwrites[existing_lab_role]:
                 print(permission, value, sep='\t')
         else:
