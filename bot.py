@@ -525,7 +525,7 @@ async def get_lab_list(ctx):
 def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
     if not role:
         return []
-    online_role_members = [member for member in role.members if member.status.online]
+    online_role_members = [member for member in role.members if member.status == discord.Status.online]
     available_members = []
     for member in online_role_members:
         member_roles = member.roles
@@ -579,7 +579,7 @@ async def raise_hand(ctx):
         await ctx.channel(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
     elif general_channel:
         online_team = get_teaching_team_members(ctx.author.guild)
-        available_team = list(filter(lambda m: not existing_member_lab_group(member), online_team))
+        available_team = list(filter(lambda m: not existing_member_lab_group(m), online_team))
         if available_team:
             await ctx.channel.send(btm.message_asking_for_help())
             await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
