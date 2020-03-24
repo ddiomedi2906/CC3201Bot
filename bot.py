@@ -206,6 +206,9 @@ async def aux_create_group(ctx):
             can_not_view_channel = discord.Permissions(PMask.VIEW)
             overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
                           for role in hpf.all_existing_lab_roles(guild)}
+            student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
+            if student_role:
+                overwrites[student_role] = discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
             # Create new lab group
             print(f'Creating a new category: {new_category_name}')
@@ -366,7 +369,7 @@ async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool
 ####################################################################
 """
 
-@bot.group(name='labgroup', alias=['group', 'lg'], invoke_without_command=True)
+@bot.group(name='group', invoke_without_command=True)
 async def labgroup_command(ctx):
     await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
 
@@ -456,7 +459,7 @@ async def get_lab_list(ctx):
 ####################################################################
 """
 
-@bot.group(name='permission', invoke_without_command=True)
+@bot.group(name='permission', aliases=['p'], invoke_without_command=True)
 async def permission_command(ctx):
     await ctx.channel.send("Base `permission` command. \n Subcommands: `allow <group> <mask>` \n `deny <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
 
@@ -537,7 +540,7 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
 """
 
 
-@bot.command(name='raise-hand', alias=[get_unicode_emoji_from_alias('raised_hand')], help='Raise your virtual hand asking for any help.')
+@bot.command(name='raise-hand', aliases=[get_unicode_emoji_from_alias('raised_hand'), 'rh'], help='Raise your virtual hand asking for any help.')
 @commands.cooldown(rate=1, per=2)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def raise_hand(ctx):
