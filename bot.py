@@ -2,6 +2,7 @@
 import os
 import random
 import re
+from enum import Enum
 from typing import Union, Optional, List
 
 import discord
@@ -26,12 +27,13 @@ MAX_STUDENTS_PER_GROUP = 3
 
 bot = commands.Bot(command_prefix='!')
 
-STREAM = 512
-VIEW = 1024
-CHANGE_NICKNAME = 67108864
-PARTIAL_TEXT = 129088
-PARTIAL_VOICE = 49283072
-ALL_BUT_ADMIN_AND_GUILD = 1341652291
+class PMask(Enum):
+    STREAM = 512
+    VIEW = 1024
+    CHANGE_NICKNAME = 67108864
+    PARTIAL_TEXT = 129088
+    PARTIAL_VOICE = 49283072
+    ALL_BUT_ADMIN_AND_GUILD = 1341652291
 
 
 """
@@ -52,9 +54,9 @@ async def on_ready():
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
     all_allow = discord.Permissions.all()
-    almost_all = discord.Permissions(ALL_BUT_ADMIN_AND_GUILD|STREAM)
-    text_and_voice_allow = discord.Permissions(PARTIAL_TEXT | PARTIAL_VOICE)
-    TEST = discord.Permissions(CHANGE_NICKNAME | PARTIAL_TEXT | PARTIAL_VOICE)
+    almost_all = discord.Permissions(PMask.ALL_BUT_ADMIN_AND_GUILD | PMask.STREAM)
+    text_and_voice_allow = discord.Permissions(PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
+    TEST = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
     for permission, value in TEST:
         print(f"{value:5}\t{permission}")
     await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
@@ -200,8 +202,8 @@ async def aux_create_group(ctx):
             new_role = await create_new_role(guild, new_role_name, mentionable=True)
             # Set lab group permissions
             default = discord.Permissions()
-            allow_text_voice_stream = discord.Permissions(VIEW | PARTIAL_TEXT | PARTIAL_VOICE | STREAM)
-            can_not_view_channel = discord.Permissions(VIEW)
+            allow_text_voice_stream = discord.Permissions(PMask.VIEW | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE | PMask.STREAM)
+            can_not_view_channel = discord.Permissions(PMask.VIEW)
             overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
                           for role in hpf.all_existing_lab_roles(guild)}
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
@@ -209,7 +211,7 @@ async def aux_create_group(ctx):
             print(f'Creating a new category: {new_category_name}')
             new_category = await guild.create_category_channel(new_category_name , overwrites=overwrites)
             # Deny access to the lab groups created before
-            await update_previous_lab_groups_permission(new_role, new_category, deny_mask=VIEW)
+            await update_previous_lab_groups_permission(new_role, new_category, deny_mask=PMask.VIEW)
             # Create new text and voice channels
             print(f'Creating a new channels: ({text_channel_name}) and ({voice_channel_name})')
             await guild.create_text_channel(text_channel_name, category=new_category)
@@ -477,7 +479,7 @@ async def show_permissions(ctx, group: int):
 @permission_command.command(name='deny-all', help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def deny_all(ctx, mask: int = VIEW):
+async def deny_all(ctx, mask: int):
     existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
     print(ctx.guild.name)
     for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
