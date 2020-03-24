@@ -125,13 +125,14 @@ async def on_command_error(ctx, error):
         await ctx.send(f'You have to wait {error.retry_after:.3}s before using this command again.')
     elif isinstance(error, commands.errors.CheckFailure):
         print(error)
-        await ctx.send('You do not have the correct role for this command.')
+        await ctx.send(error)
     elif isinstance(error, commands.errors.CommandNotFound):
         print(error)
         await ctx.send(error)
     else:
-        await ctx.send('You do not have the correct role for this command.')
         print(error)
+        await ctx.send('You do not have the correct role for this command.')
+
 
 
 """
