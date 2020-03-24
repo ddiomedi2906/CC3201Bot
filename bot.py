@@ -233,13 +233,18 @@ async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role
         return existing_role
 
 
-async def update_previous_lab_groups_permission(role: discord.Role, category: discord.CategoryChannel):
+async def update_previous_lab_groups_permission(
+        role: discord.Role,
+        category: discord.CategoryChannel,
+        allow_mask: Optional[int] = None,
+        deny_mask: Optional[int] = None
+) -> None:
     guild = category.guild
     existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name) and c != category, guild.categories))
-    default = discord.Permissions()
-    can_not_view_channel = discord.Permissions(VIEW)
+    allow = discord.Permissions(allow_mask) if allow_mask else discord.Permissions()
+    denny = discord.Permissions(deny_mask) if deny_mask else discord.Permissions()
     for lab_group in existing_lab_groups:
-        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(default, can_not_view_channel))
+        await lab_group.set_permissions(role, overwrite=discord.PermissionOverwrite.from_pair(allow, denny))
 
 
 async def aux_create_group(ctx):
@@ -277,7 +282,7 @@ async def aux_create_group(ctx):
             print(f'Creating a new category: {new_category_name}')
             new_category = await guild.create_category_channel(new_category_name , overwrites=overwrites)
             # Deny access to the lab groups created before
-            await update_previous_lab_groups_permission(new_role, new_category)
+            await update_previous_lab_groups_permission(new_role, new_category, deny_mask=VIEW)
             # Create new text and voice channels
             print(f'Creating a new channels: ({text_channel_name}) and ({voice_channel_name})')
             await guild.create_text_channel(text_channel_name, category=new_category)
@@ -516,6 +521,43 @@ async def get_lab_list(ctx):
     if list_string:
         await ctx.send("Lab list:\n" + "\n".join(list_string))
 
+"""
+####################################################################
+######################### GROUP EDIT ###############################
+####################################################################
+"""
+
+@bot.group(name='permission', invoke_without_command=True)
+async def permission_command(ctx):
+    await ctx.channel.send("Base `permission` command. \n Subcommands: `allow <group> <mask>` \n `deny <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
+
+@permission_command.command(name='show', help=".", hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def show_permissions(ctx, group: int):
+    existing_lab_group = get_lab_group(ctx.guild, group)
+    if existing_lab_group:
+        lab_group_overwrites = existing_lab_group.overwrites
+        existing_lab_role = get_lab_role(ctx.guild, group)
+        if existing_lab_role and existing_lab_role in lab_group_overwrites:
+            # allow_role, deny_role = lab_group_overwrites[existing_lab_role].pairs
+            for permission, value in lab_group_overwrites[existing_lab_role]:
+                print(permission, value, sep='\t')
+        else:
+            print(f"Role {existing_lab_role} does not have overwrites in {existing_lab_group}")
+    else:
+        print(f"Group {group} does not exists!")
+
+@permission_command.command(name='deny-all', help=".", hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def deny_all(ctx, mask: int = VIEW):
+    existing_lab_roles = all_existing_lab_roles(ctx.guild)
+    print(ctx.guild.name)
+    for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
+        group = existing_group_number_from_role(existing_lab_role)
+        print(existing_lab_role, get_lab_group(ctx.guild, group), sep='\t')
+        await update_previous_lab_groups_permission(existing_lab_role, get_lab_group(ctx.guild, group), deny_mask=mask)
 
 """
 ####################################################################
