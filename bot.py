@@ -10,6 +10,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from utils import bot_messages as btm
+from utils import helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
 load_dotenv()
@@ -96,9 +97,9 @@ async def on_reaction_add(reaction, user):
     message = reaction.message
     if message.author == bot.user and re.search(r"calling for help", message.content):
         for member in message.mentions:
-            if member == user and existing_member_lab_role(member) is None:
+            if member == user and hpf.existing_member_lab_role(member) is None:
                 group = int(re.match(r"\*\*Group[\s]+(\d+).*", message.content).group(1))
-                group_name = get_lab_group_name(group)
+                group_name = hpf.get_lab_group_name(group)
                 lab_group = discord.utils.get(user.guild.channels, name=group_name)
                 await go_for_help(member, lab_group, group)
                 await reaction.message.channel.send(btm.message_help_on_the_way(member))
@@ -131,86 +132,6 @@ async def on_command_error(ctx, error):
         print(error)
         await ctx.send('You do not have the correct role for this command.')
 
-
-
-"""
-####################################################################
-########################## HELP FUNCTIONS ##########################
-####################################################################
-"""
-
-def get_lab_group_name(number: int):
-    return f"Group {number:2}"
-
-def get_role_name(number: int):
-    return f"member-group {number:2}"
-
-def get_text_channel_name(number: int):
-    return f"text-channel-{number}"
-
-def get_voice_channel_name(number: int):
-    return f"voice-channel {number}"
-
-def get_lab_group(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.CategoryChannel]:
-    name = get_lab_group_name(group) if type(group) == int else group
-    return discord.utils.get(guild.categories, name=name)
-
-def get_lab_role(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.Role]:
-    name = get_role_name(group) if type(group) == int else group
-    return discord.utils.get(guild.roles, name=name)
-
-def get_lab_text_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.TextChannel]:
-    name = get_text_channel_name(group) if type(group) == int else group
-    return discord.utils.get(guild.channels, name=name)
-
-def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.VoiceChannel]:
-    name = get_voice_channel_name(group) if type(group) == int else group
-    return discord.utils.get(guild.channels, name=name)
-
-def all_existing_lab_roles(guild: discord.Guild) -> List[Role]:
-    return list(filter(lambda r: re.search("member-group\s+[0-9]+", r.name), guild.roles))
-
-def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
-    return int(re.sub("member-group\s+([0-9]+)", r"\1", role.name)) if re.search("member-group\s+[0-9]+", role.name) else None
-
-def existing_group_number(member: discord.Member) -> Optional[int]:
-    member_roles = member.roles
-    for role in member_roles:
-        group = existing_group_number_from_role(role)
-        if group:
-            return group
-    return None
-
-def existing_member_lab_role(member: discord.Member) -> Optional[Role]:
-    member_roles = member.roles
-    for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            return role
-    return None
-
-def existing_member_lab_group(member: discord.Member) -> Optional[discord.CategoryChannel]:
-    member_roles = member.roles
-    for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
-            return discord.utils.get(member.guild.categories, name=get_lab_group_name(num))
-    return None
-
-def existing_member_lab_text_channel(member: discord.Member) -> Optional[discord.TextChannel]:
-    member_roles = member.roles
-    for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
-            return discord.utils.get(member.guild.channels, name=get_text_channel_name(num))
-    return None
-
-def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discord.VoiceChannel]:
-    member_roles = member.roles
-    for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
-            return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
-    return None
 
 
 """
@@ -257,10 +178,10 @@ async def aux_create_group(ctx):
             break
         next_num = idx
     # Create new names
-    new_category_name = get_lab_group_name(next_num)
-    new_role_name = get_role_name(next_num)
-    text_channel_name = get_text_channel_name(next_num)
-    voice_channel_name = get_voice_channel_name(next_num)
+    new_category_name = hpf.get_lab_group_name(next_num)
+    new_role_name = hpf.get_role_name(next_num)
+    text_channel_name = hpf.get_text_channel_name(next_num)
+    voice_channel_name = hpf.get_voice_channel_name(next_num)
     # Check if category or channels already exist
     existing_category = discord.utils.get(guild.categories, name=new_category_name)
     existing_text_channel = discord.utils.get(guild.channels, name=text_channel_name)
@@ -274,7 +195,7 @@ async def aux_create_group(ctx):
             allow_text_voice_stream = discord.Permissions(VIEW | PARTIAL_TEXT | PARTIAL_VOICE | STREAM)
             can_not_view_channel = discord.Permissions(VIEW)
             overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
-                          for role in all_existing_lab_roles(guild)}
+                          for role in hpf.all_existing_lab_roles(guild)}
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
             # Create new lab group
             print(f'Creating a new category: {new_category_name}')
@@ -298,7 +219,7 @@ async def aux_create_group(ctx):
 
 async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool = True):
     guild = ctx.guild
-    category_name = get_lab_group_name(group) if type(group) == int else group
+    category_name = hpf.get_lab_group_name(group) if type(group) == int else group
     role_name = f"member-{category_name.lower()}"
     category = discord.utils.get(guild.categories, name=category_name)
     role = discord.utils.get(guild.roles, name=role_name)
@@ -370,7 +291,7 @@ async def delete_all_groups(ctx):
 
 def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     guild = ctx.guild
-    existing_role = discord.utils.get(guild.roles, name=get_role_name(group) if type(group) == int else group)
+    existing_role = discord.utils.get(guild.roles, name=hpf.get_role_name(group) if type(group) == int else group)
     student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     if not existing_role:
         return []
@@ -379,9 +300,9 @@ def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
 
 async def join_group(ctx, member: discord.Member, group: Union[int, str]):
     guild = ctx.guild
-    new_role = discord.utils.get(guild.roles, name=get_role_name(group) if type(group) == int else group)
-    new_lab_group_name = get_lab_group_name(group) if type(group) == int else group
-    existing_lab_group = existing_member_lab_role(member)
+    new_role = discord.utils.get(guild.roles, name=hpf.get_role_name(group) if type(group) == int else group)
+    new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
+    existing_lab_group = hpf.existing_member_lab_role(member)
     if existing_lab_group:
         await ctx.send(btm.message_member_already_in_group(member.name, existing_lab_group.name))
     elif not new_role:
@@ -393,12 +314,12 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
         print(f'Role "{new_role}" assigned to {member}')
         # Move to voice channel if connected
         voice_channel = discord.utils.get(guild.channels,
-                                          name=get_voice_channel_name(group) if type(group) == int else group)
+                                          name=hpf.get_voice_channel_name(group) if type(group) == int else group)
         if voice_channel and member.voice and member.voice.channel:
             await member.move_to(voice_channel)
         # Message to group text channel
         text_channel = discord.utils.get(guild.channels,
-                                         name=get_text_channel_name(group) if type(group) == int else group)
+                                         name=hpf.get_text_channel_name(group) if type(group) == int else group)
         if text_channel:
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
         # Message to general channel
@@ -410,16 +331,16 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
 
 async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
     guild = ctx.guild
-    existing_lab_role = existing_member_lab_role(member)
+    existing_lab_role = hpf.existing_member_lab_role(member)
     if existing_lab_role:
         await member.remove_roles(existing_lab_role)
         print(f'Role "{existing_lab_role}" removed to {member}')
         # Disconnect from the group voice channel if connected to it
-        voice_channel = existing_member_lab_voice_channel(member)
+        voice_channel = hpf.existing_member_lab_voice_channel(member)
         if voice_channel and member.voice and member.voice.channel == voice_channel:
             await member.move_to(None)
         # Message to group text channel
-        text_channel = existing_member_lab_text_channel(member)
+        text_channel = hpf.existing_member_lab_text_channel(member)
         if text_channel:
             await text_channel.send(btm.message_member_left_group(member.name, existing_lab_role.name))
         # Message to general channel
@@ -450,8 +371,8 @@ async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]
         await ctx.send(btm.message_member_not_exists(member_name))
     elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
         await ctx.send(
-            btm.message_max_members_in_group_error(get_lab_group_name(group) if type(group) == int else group,
-                                                            MAX_STUDENTS_PER_GROUP))
+            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
+                                                   MAX_STUDENTS_PER_GROUP))
     else:
         await leave_group(ctx, member, show_not_in_group_error=False)
         await join_group(ctx, member, group)
@@ -481,7 +402,7 @@ async def group_leave_subcommand(ctx, group: Union[int, str], member_name: Optio
 def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message: bool = True) -> Optional[str]:
     group = int(re.sub(r"Group[\s]+([0-9]+)", r"\1", group)) if type(group) == str else group
     guild = ctx.guild
-    role_name = get_role_name(group)
+    role_name = hpf.get_role_name(group)
     existing_role = discord.utils.get(guild.roles, name=role_name)
     if not existing_role:
         return btm.message_group_not_exists_error(group)
@@ -533,10 +454,10 @@ async def permission_command(ctx):
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def show_permissions(ctx, group: int):
-    existing_lab_group = get_lab_group(ctx.guild, group)
+    existing_lab_group = hpf.get_lab_group(ctx.guild, group)
     if existing_lab_group:
         lab_group_overwrites = existing_lab_group.overwrites
-        existing_lab_role = get_lab_role(ctx.guild, group)
+        existing_lab_role = hpf.get_lab_role(ctx.guild, group)
         if existing_lab_role and existing_lab_role in lab_group_overwrites:
             # allow_role, deny_role = lab_group_overwrites[existing_lab_role].pairs
             for permission, value in lab_group_overwrites[existing_lab_role]:
@@ -550,12 +471,12 @@ async def show_permissions(ctx, group: int):
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def deny_all(ctx, mask: int = VIEW):
-    existing_lab_roles = all_existing_lab_roles(ctx.guild)
+    existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
     print(ctx.guild.name)
     for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
-        group = existing_group_number_from_role(existing_lab_role)
-        print(existing_lab_role, get_lab_group(ctx.guild, group), sep='\t')
-        await update_previous_lab_groups_permission(existing_lab_role, get_lab_group(ctx.guild, group), deny_mask=mask)
+        group = hpf.existing_group_number_from_role(existing_lab_role)
+        print(existing_lab_role, hpf.get_lab_group(ctx.guild, group), sep='\t')
+        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=mask)
 
 """
 ####################################################################
@@ -591,11 +512,11 @@ def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
 
 
 async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
-    text_channel_name = get_text_channel_name(group)
+    text_channel_name = hpf.get_text_channel_name(group)
     text_channel = discord.utils.get(lab_group.channels, name=text_channel_name)
     if text_channel:
         await text_channel.send(btm.message_help_on_the_way(member))
-    voice_channel_name = get_voice_channel_name(group)
+    voice_channel_name = hpf.get_voice_channel_name(group)
     voice_channel = discord.utils.get(lab_group.channels, name=voice_channel_name)
     if voice_channel and member.voice and member.voice.channel:
         await member.move_to(voice_channel)
@@ -612,15 +533,15 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def raise_hand(ctx):
     member = ctx.author
-    existing_lab_group = existing_member_lab_group(member)
+    existing_lab_group = hpf.existing_member_lab_group(member)
     general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
     if not existing_lab_group:
         await ctx.channel.send(btm.message_member_not_in_group_for_help())
-    elif ctx.channel != existing_member_lab_text_channel(member):
+    elif ctx.channel != hpf.existing_member_lab_text_channel(member):
         await ctx.channel(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
     elif general_channel:
         online_team = get_teaching_team_members(ctx.author.guild)
-        available_team = list(filter(lambda m: not existing_member_lab_group(m), online_team))
+        available_team = list(filter(lambda m: not hpf.existing_member_lab_group(m), online_team))
         if available_team:
             await ctx.channel.send(btm.message_asking_for_help())
             await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
