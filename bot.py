@@ -2,7 +2,7 @@
 import os
 import random
 import re
-from enum import Enum
+from enum import IntFlag
 from typing import Union, Optional, List
 
 import discord
@@ -27,7 +27,7 @@ MAX_STUDENTS_PER_GROUP = 3
 
 bot = commands.Bot(command_prefix='!')
 
-class PMask(Enum):
+class PMask(IntFlag):
     STREAM = 512
     VIEW = 1024
     CHANGE_NICKNAME = 67108864
