@@ -8,11 +8,9 @@ import discord
 from discord import Role
 from discord.ext import commands
 from dotenv import load_dotenv
-import unicodedata
 
-import bot_messages as btm
-
-from emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
+from utils import bot_messages as btm
+from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
