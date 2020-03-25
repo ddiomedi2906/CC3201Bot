@@ -470,22 +470,6 @@ async def get_lab_list(ctx):
 async def permission_command(ctx):
     await ctx.channel.send("Base `permission` command. \n Subcommands: \n `allow <role> <group> <mask>` \n `deny <role> <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
 
-@permission_command.command(name='show', aliases=["sw"], help=".", hidden=True)
-@commands.cooldown(rate=1, per=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def show_permissions(ctx, group: int):
-    existing_lab_group = hpf.get_lab_group(ctx.guild, group)
-    if existing_lab_group:
-        lab_group_overwrites = existing_lab_group.overwrites
-        existing_lab_role = hpf.get_lab_role(ctx.guild, group)
-        if existing_lab_role and existing_lab_role in lab_group_overwrites:
-            for permission, value in lab_group_overwrites[existing_lab_role]:
-                print(permission, value, sep='\t')
-        else:
-            print(f"Role {existing_lab_role} does not have overwrites in {existing_lab_group}")
-    else:
-        print(f"Group {group} does not exists!")
-
 @permission_command.command(name='allow-to', aliases=["at"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
@@ -499,15 +483,15 @@ async def allow_to_role(ctx, role_mention: str, group: int, *args):
             if type(arg) == str and PMask.has_key(arg.upper()):
                 p_masks.append(arg.upper())
             else:
-                await ctx.send(f"{arg} is not a valid permission mask!")
+                await ctx.send(btm.message_permission_mask_not_valid(arg))
                 return
         overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
         await update_permission(role, lab_group, allow_mask=overwrite_mask)
-        await ctx.send(f"Permission{'s ' if len(args) > 1 else ' '}**{'|'.join(p_masks)}** allowed for **{role}** in **{lab_group}**")
+        await ctx.send(btm.message_allow_to_success(p_masks, role, lab_group))
     elif not role:
-        await ctx.send(f"Role {role} does not exist!")
+        await ctx.send(btm.message_lab_role_not_exists(role_mention))
     else:
-        await ctx.send(f"Role {role}'s permissions can't be modified!")
+        await ctx.send(btm.message_role_permissions_not_modificable_error(role))
 
 @permission_command.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -522,15 +506,15 @@ async def deny_to_role(ctx, role_mention: str, group: int, *args):
             if type(arg) == str and PMask.has_key(arg.upper()):
                 p_masks.append(arg.upper())
             else:
-                await ctx.send(f"{arg} is not a valid permission mask!")
+                await ctx.send(btm.message_permission_mask_not_valid(arg))
                 return
         overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
         await update_permission(role, lab_group, deny_mask=overwrite_mask)
-        await ctx.send(f"Permission{'s ' if len(args) > 1 else ' '}{'|'.join(p_masks)} denied for {role} in {lab_group}")
+        await ctx.send(btm.message_deny_to_success(p_masks, role, lab_group))
     elif not role:
-        await ctx.send(f"Role {role} does not exist!")
+        await ctx.send(btm.message_lab_role_not_exists(role_mention))
     else:
-        await ctx.send(f"Role {role}'s permissions can't be modified!")
+        await ctx.send(btm.message_role_permissions_not_modificable_error(role))
 
 @permission_command.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -542,16 +526,15 @@ async def allow_all(ctx, *args):
         if type(arg) == str and PMask.has_key(arg.upper()):
             p_masks.append(arg.upper())
         else:
-            await ctx.send(f"{arg} is not a valid permission mask!")
+            await ctx.send(btm.message_permission_mask_not_valid(arg))
             return
     for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
         group = hpf.existing_group_number_from_role(existing_lab_role)
         lab_group = hpf.get_lab_group(ctx.guild, group)
+        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
         print(f"Updating allow permissions on {lab_group}...")
-        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=mask)
-    await ctx.send(
-        f"Permission{'s ' if len(args) > 1 else ' '}{'|'.join(p_masks)} allowed",
-        f"for {len(existing_lab_roles)} group{'s' if len(existing_lab_roles) > 1 else ''}")
+        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
+    await ctx.send(btm.message_allow_all_success(p_masks, existing_lab_roles))
 
 @permission_command.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -568,11 +551,10 @@ async def deny_all(ctx, *args):
     for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
         group = hpf.existing_group_number_from_role(existing_lab_role)
         lab_group = hpf.get_lab_group(ctx.guild, group)
+        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
         print(f"Updating deny permissions on {lab_group}...")
-        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=mask)
-    await ctx.send(
-        f"Permission{'s ' if len(args) > 1 else ' '}{'|'.join(p_masks)} denied",
-        f"for {len(existing_lab_roles)} group{'s' if len(existing_lab_roles) > 1 else ''}")
+        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
+    await ctx.send(btm.message_deny_all_success(p_masks, existing_lab_roles))
 
 """
 ####################################################################

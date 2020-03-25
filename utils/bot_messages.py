@@ -27,6 +27,9 @@ def message_member_not_exists(member_name: str) -> str:
 def message_lab_group_not_exists(group_name: str) -> str:
     return f"**{group_name}** does not exist!"
 
+def message_lab_role_not_exists(role_name: str) -> str:
+    return f"Role {role_name} does not exist!"
+
 """
 ####################################################################
 ######################### GROUP MESSAGES ###########################
@@ -56,6 +59,33 @@ def message_member_left_group(member_name: str, group_name: str) -> str:
 
 def message_member_not_in_group(member_name: str) -> str:
     return f"**{member_name}** is not part group!"
+
+"""
+####################################################################
+####################### GROUP EDIT MESSAGES ########################
+####################################################################
+"""
+
+def message_allow_to_success(p_masks: List[str], role: discord.Role, lab_group: discord.CategoryChannel) -> str:
+    return f"Permission{'s ' if len(p_masks) > 1 else ' '}**{'|'.join(p_masks)}** allowed for **{role}** in **{lab_group}**"
+
+def message_deny_to_success(p_masks: List[str], role: discord.Role, lab_group: discord.CategoryChannel) -> str:
+    return f"Permission{'s ' if len(p_masks) > 1 else ' '}**{'|'.join(p_masks)}** denied for **{role}** in **{lab_group}**"
+
+def message_role_permissions_not_modificable_error(role: discord.Role) -> str:
+    return f"Role {role}'s permissions can't be modified!"
+
+def message_permission_mask_not_valid(p_mask: str) -> str:
+    return f"**{p_mask}** is not a valid permission mask!"
+
+def message_allow_all_success(p_masks: List[str], roles: List[discord.Role]) -> str:
+    return  f"Permission{'s ' if len(p_masks) > 1 else ' '}{'|'.join(p_masks)} allowed" + \
+        f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
+
+def message_deny_all_success(p_masks: List[str], roles: List[discord.Role]) -> str:
+    return f"Permission{'s ' if len(p_masks) > 1 else ' '}{'|'.join(p_masks)} denied" + \
+        f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
+
 
 """
 ####################################################################
