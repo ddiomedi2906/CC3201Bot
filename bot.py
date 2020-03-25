@@ -4,6 +4,8 @@ import random
 import re
 from enum import IntFlag
 from typing import Union, Optional, List
+import functools
+import operator
 
 import discord
 from discord import Role
@@ -34,6 +36,10 @@ class PMask(IntFlag):
     PARTIAL_TEXT = 129088
     PARTIAL_VOICE = 49283072
     ALL_BUT_ADMIN_AND_GUILD = 1341652291
+
+    @classmethod
+    def has_key(cls, key):
+        return key in cls._member_names_
 
 
 """
@@ -78,7 +84,9 @@ async def on_member_join(member):
 async def on_message(message):
     if message.author == bot.user:
         return
-    if message.role_mentions:
+    if re.search(r"!.+?", message.content):
+        await bot.process_commands(message)
+    elif message.role_mentions:
         available_people = []
         # Check professors
         professor_mention = discord.utils.get(message.role_mentions, name=PROFESSOR_ROLE_NAME)
@@ -90,8 +98,7 @@ async def on_message(message):
         assistant_mention = discord.utils.get(message.role_mentions, name=TA_ROLE_NAME)
         available_people.extend(get_available_members_from_role(assistant_mention))
         print(f"People available: {' - '.join([member.name for member in available_people])}")
-    if re.search(r"!.+?", message.content):
-        await bot.process_commands(message)
+    
 
 
 @bot.event
@@ -461,9 +468,9 @@ async def get_lab_list(ctx):
 
 @bot.group(name='permission', aliases=['p'], invoke_without_command=True)
 async def permission_command(ctx):
-    await ctx.channel.send("Base `permission` command. \n Subcommands: `allow <group> <mask>` \n `deny <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
+    await ctx.channel.send("Base `permission` command. \n Subcommands: \n `allow <role> <group> <mask>` \n `deny <role> <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
 
-@permission_command.command(name='show', help=".", hidden=True)
+@permission_command.command(name='show', aliases=["sw"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def show_permissions(ctx, group: int):
@@ -479,16 +486,93 @@ async def show_permissions(ctx, group: int):
     else:
         print(f"Group {group} does not exists!")
 
-@permission_command.command(name='deny-all', help=".", hidden=True)
+@permission_command.command(name='allow-to', aliases=["at"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def deny_all(ctx, mask: int):
+async def allow_to_role(ctx, role_mention: str, group: int, *args):
+    role = discord.utils.get(ctx.guild.roles, mention=role_mention)
+    if role and hpf.get_lab_role(ctx.guild, role.name):
+        lab_group = hpf.get_lab_group(ctx.guild, group)
+        print(f"Updating allow permissions of {role} on {lab_group}...")
+        p_masks = []
+        for arg in args:
+            if type(arg) == str and PMask.has_key(arg.upper()):
+                p_masks.append(arg.upper())
+            else:
+                await ctx.send(f"{arg} is not a valid permission mask!")
+                return
+        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
+        await update_permission(role, lab_group, allow_mask=overwrite_mask)
+        await ctx.send(f"Permission{'s ' if len(args) > 1 else ' '}**{'|'.join(p_masks)}** allowed for **{role}** in **{lab_group}**")
+    elif not role:
+        await ctx.send(f"Role {role} does not exist!")
+    else:
+        await ctx.send(f"Role {role}'s permissions can't be modified!")
+
+@permission_command.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def deny_to_role(ctx, role_mention: str, group: int, *args):
+    role = discord.utils.get(ctx.guild.roles, mention=role_mention)
+    if role and hpf.get_lab_role(ctx.guild, role.name):
+        lab_group = hpf.get_lab_group(ctx.guild, group)
+        print(f"Updating deny permissions of {role} on {lab_group}...")
+        p_masks = []
+        for arg in args:
+            if type(arg) == str and PMask.has_key(arg.upper()):
+                p_masks.append(arg.upper())
+            else:
+                await ctx.send(f"{arg} is not a valid permission mask!")
+                return
+        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
+        await update_permission(role, lab_group, deny_mask=overwrite_mask)
+        await ctx.send(f"Permission{'s ' if len(args) > 1 else ' '}{'|'.join(p_masks)} denied for {role} in {lab_group}")
+    elif not role:
+        await ctx.send(f"Role {role} does not exist!")
+    else:
+        await ctx.send(f"Role {role}'s permissions can't be modified!")
+
+@permission_command.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def allow_all(ctx, *args):
     existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
-    print(ctx.guild.name)
+    p_masks = []
+    for arg in args:
+        if type(arg) == str and PMask.has_key(arg.upper()):
+            p_masks.append(arg.upper())
+        else:
+            await ctx.send(f"{arg} is not a valid permission mask!")
+            return
     for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
         group = hpf.existing_group_number_from_role(existing_lab_role)
-        print(existing_lab_role, hpf.get_lab_group(ctx.guild, group), sep='\t')
+        lab_group = hpf.get_lab_group(ctx.guild, group)
+        print(f"Updating allow permissions on {lab_group}...")
+        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=mask)
+    await ctx.send(
+        f"Permission{'s ' if len(args) > 1 else ' '}{'|'.join(p_masks)} allowed",
+        f"for {len(existing_lab_roles)} group{'s' if len(existing_lab_roles) > 1 else ''}")
+
+@permission_command.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def deny_all(ctx, *args):
+    existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
+    p_masks = []
+    for arg in args:
+        if type(arg) == str and PMask.has_key(arg.upper()):
+            p_masks.append(arg.upper())
+        else:
+            await ctx.send(f"{arg} is not a valid permission mask!")
+            return
+    for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
+        group = hpf.existing_group_number_from_role(existing_lab_role)
+        lab_group = hpf.get_lab_group(ctx.guild, group)
+        print(f"Updating deny permissions on {lab_group}...")
         await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=mask)
+    await ctx.send(
+        f"Permission{'s ' if len(args) > 1 else ' '}{'|'.join(p_masks)} denied",
+        f"for {len(existing_lab_roles)} group{'s' if len(existing_lab_roles) > 1 else ''}")
 
 """
 ####################################################################
