@@ -16,6 +16,11 @@ from utils import bot_messages as btm
 from utils import helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
+# TODO: clean command
+# TODO: random join
+# TODO: nickname requirement
+# TODO: spanish messages
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 # GUILD = os.getenv('DISCORD_GUILD')
@@ -29,6 +34,7 @@ MAX_STUDENTS_PER_GROUP = 3
 
 bot = commands.Bot(command_prefix='!')
 
+
 class PMask(IntFlag):
     STREAM = 512
     VIEW = 1024
@@ -40,7 +46,6 @@ class PMask(IntFlag):
     @classmethod
     def has_key(cls, key):
         return key in cls._member_names_
-
 
 """
 ####################################################################
@@ -100,7 +105,6 @@ async def on_message(message):
         print(f"People available: {' - '.join([member.name for member in available_people])}")
     
 
-
 @bot.event
 async def on_reaction_add(reaction, user):
     message = reaction.message
@@ -141,13 +145,12 @@ async def on_command_error(ctx, error):
         print(error)
         await ctx.send('You do not have the correct role for this command.')
 
-
-
 """
 ####################################################################
 ################### CREATE/DELETE GROUP COMMANDS ###################
 ####################################################################
 """
+
 
 async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role:
     existing_role = discord.utils.get(guild.roles, name=role_name)
@@ -159,6 +162,7 @@ async def create_new_role(guild: discord.Guild, role_name: str, **kargs) -> Role
         await existing_role.edit(**kargs)
         print(f'Role {role_name} already exists!')
         return existing_role
+
 
 async def update_permission(
         role: discord.Role,
@@ -309,6 +313,7 @@ async def delete_all_groups(ctx):
 ####################################################################
 """
 
+
 def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     guild = ctx.guild
     existing_role = discord.utils.get(guild.roles, name=hpf.get_role_name(group) if type(group) == int else group)
@@ -348,7 +353,6 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
             await general_channel.send(btm.message_member_joined_group(member.name, new_lab_group_name))
 
 
-
 async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
     guild = ctx.guild
     existing_lab_role = hpf.existing_member_lab_role(member)
@@ -376,9 +380,11 @@ async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool
 ####################################################################
 """
 
+
 @bot.group(name='group', invoke_without_command=True)
 async def labgroup_command(ctx):
     await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
+
 
 @labgroup_command.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
 @commands.cooldown(rate=1, per=5)
@@ -404,7 +410,6 @@ async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def group_join_subcommand(ctx, group: Union[int, str]):
     await join_group(ctx, ctx.author, group)
-
 
 
 @labgroup_command.command(name='leave', help='Leave a group. Need to provide the group number.')
@@ -466,9 +471,11 @@ async def get_lab_list(ctx):
 ####################################################################
 """
 
+
 @bot.group(name='permission', aliases=['p'], invoke_without_command=True)
 async def permission_command(ctx):
     await ctx.channel.send("Base `permission` command. \n Subcommands: \n `allow <role> <group> <mask>` \n `deny <role> <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
+
 
 @permission_command.command(name='allow-to', aliases=["at"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -493,6 +500,7 @@ async def allow_to_role(ctx, role_mention: str, group: int, *args):
     else:
         await ctx.send(btm.message_role_permissions_not_modificable_error(role))
 
+
 @permission_command.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
@@ -516,6 +524,7 @@ async def deny_to_role(ctx, role_mention: str, group: int, *args):
     else:
         await ctx.send(btm.message_role_permissions_not_modificable_error(role))
 
+
 @permission_command.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
@@ -535,6 +544,7 @@ async def allow_all(ctx, *args):
         print(f"Updating allow permissions on {lab_group}...")
         await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
     await ctx.send(btm.message_allow_all_success(p_masks, existing_lab_roles))
+
 
 @permission_command.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -562,6 +572,7 @@ async def deny_all(ctx, *args):
 ####################################################################
 """
 
+
 def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
     if not role:
         return []
@@ -578,8 +589,10 @@ def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
             available_members.append(member)
     return available_members
 
+
 def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
     return list(filter(lambda r: r.name in [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME], guild.roles))
+
 
 def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
     TT_roles = get_teaching_team_roles(guild)
@@ -653,6 +666,7 @@ async def nine_nine(ctx):
     response = random.choice(brooklyn_99_quotes)
     await ctx.send(response)
 
+
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
 @commands.cooldown(rate=1, per=1)
 async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
@@ -662,8 +676,9 @@ async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
     ]
     await ctx.send(', '.join(dice))
 
+
 @bot.command(name='salute', help='Say hello to this friendly bot.')
-@commands.cooldown(rate=1, per=1)
+@commands.cooldown(rate=60, per=1)
 async def salute(ctx):
     await ctx.send(get_unicode_emoji_from_alias('wave'))
     # await ctx.author.create_dm()
