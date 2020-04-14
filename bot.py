@@ -252,7 +252,7 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
     if category:
         channels = category.channels
         for group_member in (role.members if role else []):
-            await leave_group(ctx, group_member, show_not_in_group_error=False)
+            await aux_leave_group(ctx, group_member, show_not_in_group_error=False)
         for channel in channels:
             print(f'Deleting channel: {channel.name}')
             await channel.delete()
@@ -328,12 +328,14 @@ def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
 
 
-async def join_group(ctx, member: discord.Member, group: Union[int, str]):
+async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]):
     guild = ctx.guild
     new_role = discord.utils.get(guild.roles, name=hpf.get_role_name(group) if type(group) == int else group)
     new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
     existing_lab_group = hpf.existing_member_lab_role(member)
-    if existing_lab_group:
+    if not member.nick:
+        await ctx.send(btm.message_member_need_name_error(member))
+    elif existing_lab_group:
         await ctx.send(btm.message_member_already_in_group(get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group_name))
@@ -354,16 +356,15 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
         # Message to general channel
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
-        if general_channel:
+        if general_channel and not member_in_teaching_team(member, guild):
             await general_channel.send(btm.message_member_joined_group(get_nick(member), new_lab_group_name))
 
 
-async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
+async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
     guild = ctx.guild
     existing_lab_role = hpf.existing_member_lab_role(member)
     if existing_lab_role:
-        await member.remove_roles(existing_lab_role)
-        print(f'Role "{existing_lab_role}" removed to {member}')
+        existing_lab_group = hpf.existing_member_lab_group(member)
         # Disconnect from the group voice channel if connected to it
         voice_channel = hpf.existing_member_lab_voice_channel(member)
         if voice_channel and member.voice and member.voice.channel == voice_channel:
@@ -371,11 +372,13 @@ async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool
         # Message to group text channel
         text_channel = hpf.existing_member_lab_text_channel(member)
         if text_channel:
-            await text_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_role.name))
+            await text_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_group.name))
+        await member.remove_roles(existing_lab_role)
+        print(f'Role "{existing_lab_role}" removed to {member}')
         # Message to general channel
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
-        if general_channel:
-            await general_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_role.name))
+        if general_channel and not member_in_teaching_team(member, guild):
+            await general_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_group.name))
     elif show_not_in_group_error:
         await ctx.send(btm.message_member_not_in_group(get_nick(member)))
 
@@ -404,8 +407,8 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
                                                    MAX_STUDENTS_PER_GROUP))
     else:
-        await leave_group(ctx, member, show_not_in_group_error=False)
-        await join_group(ctx, member, group)
+        await aux_leave_group(ctx, member, show_not_in_group_error=False)
+        await aux_join_group(ctx, member, group)
 
 
 @bot.command(name='join', help='Join to a group. Need to provide the group number.')
@@ -414,7 +417,7 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def join_command(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
-        await join_group(ctx, ctx.author, group)
+        await aux_join_group(ctx, ctx.author, group)
 
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
@@ -422,7 +425,7 @@ async def join_command(ctx, group: Union[int, str]):
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def leave_command(ctx):
     async with ctx.channel.typing():
-        await leave_group(ctx, ctx.author)
+        await aux_leave_group(ctx, ctx.author)
 
 """
 ####################################################################
@@ -440,7 +443,7 @@ async def aux_clean_group(ctx, group: Union[int, str]):
     if category and existing_role:
         text_channels = category.text_channels
         for group_member in (existing_role.members if existing_role else []):
-            await leave_group(ctx, group_member, show_not_in_group_error=False)
+            await aux_leave_group(ctx, group_member, show_not_in_group_error=False)
         for text_channel in text_channels:
             text_channel_name = text_channel.name
             print(f'Cleaning messages in text channels: ({text_channel_name})')
@@ -655,6 +658,13 @@ def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
     for role in TT_roles:
         available_team.extend(get_available_members_from_role(role))
     return available_team
+
+def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> bool:
+    TT_roles = get_teaching_team_roles(guild)
+    for member_role in member.roles:
+        if discord.utils.get(TT_roles, name=member_role.name):
+            return True
+    return False
 
 
 async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):

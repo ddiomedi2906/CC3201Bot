@@ -54,6 +54,9 @@ def message_group_cleaned(category_name: str) -> str:
 def message_member_joined_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has joined to **{group_name}!**"
 
+def message_member_need_name_error(member: discord.Member) -> str:
+    return f"Hey **{member.mention}**, set your nickname or use `!nickname <your_name>` before joining a group."
+
 def message_mention_member_when_join_group(member: discord.Member, group_name: str) -> str:
     return f"**{member.mention}** has joined to **{group_name}!**"
 
