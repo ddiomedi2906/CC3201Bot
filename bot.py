@@ -387,7 +387,7 @@ async def labgroup_command(ctx):
     await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
 
 
-@labgroup_command.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
+@bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
 @commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
@@ -405,7 +405,7 @@ async def group_move_to_subcommand(ctx, member_mention: discord.Member, group: U
         await join_group(ctx, member, group)
 
 
-@labgroup_command.command(name='join', help='Join to a group. Need to provide the group number.')
+@bot.command(name='join', help='Join to a group. Need to provide the group number.')
 @commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
@@ -413,10 +413,10 @@ async def group_join_subcommand(ctx, group: Union[int, str]):
     await join_group(ctx, ctx.author, group)
 
 
-@labgroup_command.command(name='leave', help='Leave a group. Need to provide the group number.')
+@bot.command(name='leave', help='Leave a group. Need to provide the group number.')
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
-async def group_leave_subcommand(ctx, group: Union[int, str], member_name: Optional[str] = None):
+async def group_leave_subcommand(ctx):
     await leave_group(ctx, ctx.author)
 
 """
@@ -449,7 +449,7 @@ async def get_group_members(ctx, group: int):
         await ctx.send(message)
 
 
-@bot.command(name='lab-list', help='List all group with its members.', hidden=True)
+@bot.command(name='lab-list', aliases=["list"], help='List all group with its members.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
