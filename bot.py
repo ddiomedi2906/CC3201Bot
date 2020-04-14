@@ -16,7 +16,6 @@ from utils import bot_messages as btm
 from utils import helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
-# TODO: clean command
 # TODO: random join
 # TODO: nickname requirement
 # TODO: spanish messages
@@ -229,12 +228,13 @@ async def aux_create_group(ctx):
             await update_previous_lab_groups_permission(new_role, new_category, deny_mask=PMask.VIEW)
             # Create new text and voice channels
             print(f'Creating a new channels: ({text_channel_name}) and ({voice_channel_name})')
-            await guild.create_text_channel(text_channel_name, category=new_category)
-            await guild.create_voice_channel(voice_channel_name, category=new_category)
+            text_channel = await new_category.create_text_channel(text_channel_name)
+            await new_category.create_voice_channel(voice_channel_name)
             # Success message
             general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
             if general_channel:
                 await general_channel.send(btm.message_group_created(new_category_name, next_num))
+            await text_channel.send(btm.message_welcome_group(new_category_name))
         except Exception as e:
             print(e)
             await ctx.send(btm.message_unexpected_error("create-group"))
@@ -419,6 +419,50 @@ async def group_join_subcommand(ctx, group: Union[int, str]):
 async def group_leave_subcommand(ctx):
     await leave_group(ctx, ctx.author)
 
+# TODO: clean command
+"""
+####################################################################
+######################## CLEAN GROUP COMMANDS ######################
+####################################################################
+"""
+
+
+async def aux_clean_group(ctx, group: Union[int, str]):
+    guild = ctx.guild
+    category_name = hpf.get_lab_group_name(group) if type(group) == int else group
+    role_name = f"member-{category_name.lower()}"
+    category = discord.utils.get(guild.categories, name=category_name)
+    existing_role = discord.utils.get(guild.roles, name=role_name)
+    if category and existing_role:
+        text_channels = category.text_channels
+        for group_member in (existing_role.members if existing_role else []):
+            await leave_group(ctx, group_member, show_not_in_group_error=False)
+        for text_channel in text_channels:
+            text_channel_name = text_channel.name
+            print(f'Cleaning messages in text channels: ({text_channel_name})')
+            await text_channel.purge()
+            await text_channel.send(btm.message_welcome_group(category_name))
+        await ctx.send(btm.message_group_cleaned(category_name))
+    else:
+        await ctx.send(btm.message_group_not_exists_error(category_name))
+
+@bot.command(name='clean', help='Clean group messages. Need to provide the group number.', hidden=True)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def clean_command(ctx, group: Union[int, str]):
+    async with ctx.channel.typing():
+        await aux_clean_group(ctx, group)
+
+@bot.command(name='clean-all', help='Clean all groups messages.', hidden=True)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def clean_all_command(ctx):
+    async with ctx.channel.typing():
+        guild = ctx.guild
+        for category in sorted(guild.categories, key=lambda c: c.name, reverse=False):
+            if re.search(r"Group[\s]+[0-9]+", category.name):
+                await aux_clean_group(ctx, category.name)
+
 """
 ####################################################################
 ######################### GROUP LIST ###########################
@@ -473,7 +517,7 @@ async def get_lab_list(ctx):
 """
 
 
-@bot.group(name='permission', aliases=['p'], invoke_without_command=True)
+@bot.group(name='permission', aliases=['p'], invoke_without_command=True, hidden=True)
 async def permission_command(ctx):
     await ctx.channel.send("Base `permission` command. \n Subcommands: \n `allow <role> <group> <mask>` \n `deny <role> <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
 

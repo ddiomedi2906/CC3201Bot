@@ -37,11 +37,19 @@ def message_lab_role_not_exists(role_name: str) -> str:
 ####################################################################
 """
 
+def message_welcome_group(category_name: str) -> str:
+    return f"Welcome to **{category_name}**! \n" \
+           f"If you need any help, use `!raise-hand` (or just `!rh`) and I will bring some support. \n" \
+           f"If you want to leave the group, use `!leave`."
+
 def message_group_created(category_name: str, group: int) -> str:
-    return f"New **{category_name}** created! To join use the following command: `!labgroup join {group}`"
+    return f"New **{category_name}** created! To join the group use `!join {group}`"
 
 def message_group_deleted(category_name: str) -> str:
     return f"**{category_name}** deleted!"
+
+def message_group_cleaned(category_name: str) -> str:
+    return f"**{category_name}** cleaned!"
 
 def message_member_joined_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has joined to **{group_name}!**"
