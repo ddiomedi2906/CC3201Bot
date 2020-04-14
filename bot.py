@@ -280,15 +280,17 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def create_group(ctx):
-    await aux_create_group(ctx)
+    async with ctx.channel.typing():
+        await aux_create_group(ctx)
 
 
 @bot.command(name='create-many-groups', help='Create N new lab groups.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def create_many_groups(ctx, num_groups: int):
-    for _ in range(num_groups):
-        await aux_create_group(ctx)
+    async with ctx.channel.typing():
+        for _ in range(num_groups):
+            await aux_create_group(ctx)
 
 
 @bot.command(name='delete-group', help='Delete a lab group. Need to provide the group number.', hidden=True)
@@ -296,17 +298,19 @@ async def create_many_groups(ctx, num_groups: int):
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def delete_group(ctx, group: Union[int, str]):
-    await aux_delete_group(ctx, group)
+    async with ctx.channel.typing():
+        await aux_delete_group(ctx, group)
 
 
 @bot.command(name='delete-all-groups', help='Delete all lab groups.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def delete_all_groups(ctx):
-    guild = ctx.guild
-    for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
-        if re.search(r"Group[\s]+[0-9]+", category.name):
-            await aux_delete_group(ctx, category.name)
+    async with ctx.channel.typing():
+        guild = ctx.guild
+        for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
+            if re.search(r"Group[\s]+[0-9]+", category.name):
+                await aux_delete_group(ctx, category.name)
 
 """
 ####################################################################
@@ -382,7 +386,7 @@ async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool
 """
 
 
-@bot.group(name='group', invoke_without_command=True)
+@bot.group(name='group', invoke_without_command=True, hidden=True)
 async def labgroup_command(ctx):
     await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
 
@@ -391,8 +395,7 @@ async def labgroup_command(ctx):
 @commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def group_move_to_subcommand(ctx, member_mention: discord.Member, group: Union[int, str]):
-    # guild = ctx.guild
+async def move_to_command(ctx, member_mention: discord.Member, group: Union[int, str]):
     member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
     if not member:
         await ctx.send(btm.message_member_not_exists(member_mention.nick))
@@ -409,17 +412,18 @@ async def group_move_to_subcommand(ctx, member_mention: discord.Member, group: U
 @commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
-async def group_join_subcommand(ctx, group: Union[int, str]):
-    await join_group(ctx, ctx.author, group)
+async def join_command(ctx, group: Union[int, str]):
+    async with ctx.channel.typing():
+        await join_group(ctx, ctx.author, group)
 
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
-async def group_leave_subcommand(ctx):
-    await leave_group(ctx, ctx.author)
+async def leave_command(ctx):
+    async with ctx.channel.typing():
+        await leave_group(ctx, ctx.author)
 
-# TODO: clean command
 """
 ####################################################################
 ######################## CLEAN GROUP COMMANDS ######################
@@ -488,27 +492,29 @@ def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message:
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_group_members(ctx, group: int):
-    message = aux_get_group_members(ctx, group)
-    if message:
-        await ctx.send(message)
+    async with ctx.channel.typing():
+        message = aux_get_group_members(ctx, group)
+        if message:
+            await ctx.send(message)
 
 
 @bot.command(name='lab-list', aliases=["list"], help='List all group with its members.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
-    guild = ctx.guild
-    existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), guild.categories))
-    if not existing_lab_groups:
-        await ctx.send(btm.message_no_groups())
-        return
-    list_string = []
-    for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
-        message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
-        if message:
-            list_string.append(message)
-    if list_string:
-        await ctx.send("Lab list:\n" + "\n".join(list_string))
+    async with ctx.channel.typing():
+        guild = ctx.guild
+        existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), guild.categories))
+        if not existing_lab_groups:
+            await ctx.send(btm.message_no_groups())
+            return
+        list_string = []
+        for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
+            message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
+            if message:
+                list_string.append(message)
+        if list_string:
+            await ctx.send("Lab list:\n" + "\n".join(list_string))
 
 """
 ####################################################################
@@ -526,34 +532,58 @@ async def permission_command(ctx):
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def allow_to_role(ctx, role_mention: str, group: int, *args):
-    role = discord.utils.get(ctx.guild.roles, mention=role_mention)
-    if role and hpf.get_lab_role(ctx.guild, role.name):
-        lab_group = hpf.get_lab_group(ctx.guild, group)
-        print(f"Updating allow permissions of {role} on {lab_group}...")
-        p_masks = []
-        for arg in args:
-            if type(arg) == str and PMask.has_key(arg.upper()):
-                p_masks.append(arg.upper())
-            else:
-                await ctx.send(btm.message_permission_mask_not_valid(arg))
-                return
-        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-        await update_permission(role, lab_group, allow_mask=overwrite_mask)
-        await ctx.send(btm.message_allow_to_success(p_masks, role, lab_group))
-    elif not role:
-        await ctx.send(btm.message_lab_role_not_exists(role_mention))
-    else:
-        await ctx.send(btm.message_role_permissions_not_modificable_error(role))
+    async with ctx.channel.typing():
+        role = discord.utils.get(ctx.guild.roles, mention=role_mention)
+        if role and hpf.get_lab_role(ctx.guild, role.name):
+            lab_group = hpf.get_lab_group(ctx.guild, group)
+            print(f"Updating allow permissions of {role} on {lab_group}...")
+            p_masks = []
+            for arg in args:
+                if type(arg) == str and PMask.has_key(arg.upper()):
+                    p_masks.append(arg.upper())
+                else:
+                    await ctx.send(btm.message_permission_mask_not_valid(arg))
+                    return
+            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
+            await update_permission(role, lab_group, allow_mask=overwrite_mask)
+            await ctx.send(btm.message_allow_to_success(p_masks, role, lab_group))
+        elif not role:
+            await ctx.send(btm.message_lab_role_not_exists(role_mention))
+        else:
+            await ctx.send(btm.message_role_permissions_not_modificable_error(role))
 
 
 @permission_command.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def deny_to_role(ctx, role_mention: str, group: int, *args):
-    role = discord.utils.get(ctx.guild.roles, mention=role_mention)
-    if role and hpf.get_lab_role(ctx.guild, role.name):
-        lab_group = hpf.get_lab_group(ctx.guild, group)
-        print(f"Updating deny permissions of {role} on {lab_group}...")
+    async with ctx.channel.typing():
+        role = discord.utils.get(ctx.guild.roles, mention=role_mention)
+        if role and hpf.get_lab_role(ctx.guild, role.name):
+            lab_group = hpf.get_lab_group(ctx.guild, group)
+            print(f"Updating deny permissions of {role} on {lab_group}...")
+            p_masks = []
+            for arg in args:
+                if type(arg) == str and PMask.has_key(arg.upper()):
+                    p_masks.append(arg.upper())
+                else:
+                    await ctx.send(btm.message_permission_mask_not_valid(arg))
+                    return
+            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
+            await update_permission(role, lab_group, deny_mask=overwrite_mask)
+            await ctx.send(btm.message_deny_to_success(p_masks, role, lab_group))
+        elif not role:
+            await ctx.send(btm.message_lab_role_not_exists(role_mention))
+        else:
+            await ctx.send(btm.message_role_permissions_not_modificable_error(role))
+
+
+@permission_command.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def allow_all(ctx, *args):
+    async with ctx.channel.typing():
+        existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
         p_masks = []
         for arg in args:
             if type(arg) == str and PMask.has_key(arg.upper()):
@@ -561,55 +591,35 @@ async def deny_to_role(ctx, role_mention: str, group: int, *args):
             else:
                 await ctx.send(btm.message_permission_mask_not_valid(arg))
                 return
-        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-        await update_permission(role, lab_group, deny_mask=overwrite_mask)
-        await ctx.send(btm.message_deny_to_success(p_masks, role, lab_group))
-    elif not role:
-        await ctx.send(btm.message_lab_role_not_exists(role_mention))
-    else:
-        await ctx.send(btm.message_role_permissions_not_modificable_error(role))
-
-
-@permission_command.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
-@commands.cooldown(rate=1, per=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def allow_all(ctx, *args):
-    existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
-    p_masks = []
-    for arg in args:
-        if type(arg) == str and PMask.has_key(arg.upper()):
-            p_masks.append(arg.upper())
-        else:
-            await ctx.send(btm.message_permission_mask_not_valid(arg))
-            return
-    for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
-        group = hpf.existing_group_number_from_role(existing_lab_role)
-        lab_group = hpf.get_lab_group(ctx.guild, group)
-        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-        print(f"Updating allow permissions on {lab_group}...")
-        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
-    await ctx.send(btm.message_allow_all_success(p_masks, existing_lab_roles))
+        for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
+            group = hpf.existing_group_number_from_role(existing_lab_role)
+            lab_group = hpf.get_lab_group(ctx.guild, group)
+            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
+            print(f"Updating allow permissions on {lab_group}...")
+            await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
+        await ctx.send(btm.message_allow_all_success(p_masks, existing_lab_roles))
 
 
 @permission_command.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def deny_all(ctx, *args):
-    existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
-    p_masks = []
-    for arg in args:
-        if type(arg) == str and PMask.has_key(arg.upper()):
-            p_masks.append(arg.upper())
-        else:
-            await ctx.send(f"{arg} is not a valid permission mask!")
-            return
-    for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
-        group = hpf.existing_group_number_from_role(existing_lab_role)
-        lab_group = hpf.get_lab_group(ctx.guild, group)
-        overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-        print(f"Updating deny permissions on {lab_group}...")
-        await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
-    await ctx.send(btm.message_deny_all_success(p_masks, existing_lab_roles))
+    async with ctx.channel.typing():
+        existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
+        p_masks = []
+        for arg in args:
+            if type(arg) == str and PMask.has_key(arg.upper()):
+                p_masks.append(arg.upper())
+            else:
+                await ctx.send(f"{arg} is not a valid permission mask!")
+                return
+        for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
+            group = hpf.existing_group_number_from_role(existing_lab_role)
+            lab_group = hpf.get_lab_group(ctx.guild, group)
+            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
+            print(f"Updating deny permissions on {lab_group}...")
+            await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
+        await ctx.send(btm.message_deny_all_success(p_masks, existing_lab_roles))
 
 """
 ####################################################################
@@ -668,26 +678,27 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
 @commands.cooldown(rate=1, per=2)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def raise_hand(ctx):
-    member = ctx.author
-    existing_lab_group = hpf.existing_member_lab_group(member)
-    general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
-    if not existing_lab_group:
-        await ctx.channel.send(btm.message_member_not_in_group_for_help())
-    elif ctx.channel != hpf.existing_member_lab_text_channel(member):
-        await ctx.channel(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
-    elif general_channel:
-        online_team = get_teaching_team_members(ctx.author.guild)
-        available_team = list(filter(lambda m: not hpf.existing_member_lab_group(m), online_team))
-        if available_team:
-            await ctx.channel.send(btm.message_asking_for_help())
-            await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
-        elif online_team:
-            await ctx.channel.send(btm.message_no_one_available_error())
-            await general_channel.send(btm.message_call_for_help(existing_lab_group.name, online_team))
+    async with ctx.channel.typing():
+        member = ctx.author
+        existing_lab_group = hpf.existing_member_lab_group(member)
+        general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
+        if not existing_lab_group:
+            await ctx.channel.send(btm.message_member_not_in_group_for_help())
+        elif ctx.channel != hpf.existing_member_lab_text_channel(member):
+            await ctx.channel(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
+        elif general_channel:
+            online_team = get_teaching_team_members(ctx.author.guild)
+            available_team = list(filter(lambda m: not hpf.existing_member_lab_group(m), online_team))
+            if available_team:
+                await ctx.channel.send(btm.message_asking_for_help())
+                await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
+            elif online_team:
+                await ctx.channel.send(btm.message_no_one_available_error())
+                await general_channel.send(btm.message_call_for_help(existing_lab_group.name, online_team))
+            else:
+                await ctx.channel.send(btm.message_no_one_online_error())
         else:
-            await ctx.channel.send(btm.message_no_one_online_error())
-    else:
-        await ctx.channel.send(btm.message_can_not_get_help_error())
+            await ctx.channel.send(btm.message_can_not_get_help_error())
 
 
 """
