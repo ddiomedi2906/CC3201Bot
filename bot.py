@@ -20,6 +20,7 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 # TODO: random join
 # TODO: nickname requirement
 # TODO: spanish messages
+from utils.helper_functions import get_nick
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -62,7 +63,7 @@ async def on_ready():
         f'{bot.user} is connected to the following guild:\n'
         f'{guild.name}(id: {guild.id})'
     )
-    members = '\n - '.join([member.name for member in guild.members])
+    members = '\n - '.join([get_nick(member) for member in guild.members])
     print(f'Guild Members:\n - {members}')
     all_allow = discord.Permissions.all()
     almost_all = discord.Permissions(PMask.ALL_BUT_ADMIN_AND_GUILD | PMask.STREAM)
@@ -102,7 +103,7 @@ async def on_message(message):
         # Check TAs
         assistant_mention = discord.utils.get(message.role_mentions, name=TA_ROLE_NAME)
         available_people.extend(get_available_members_from_role(assistant_mention))
-        print(f"People available: {' - '.join([member.name for member in available_people])}")
+        print(f"People available: {' - '.join([get_nick(member) for member in available_people])}")
     
 
 @bot.event
@@ -329,7 +330,7 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
     new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
     existing_lab_group = hpf.existing_member_lab_role(member)
     if existing_lab_group:
-        await ctx.send(btm.message_member_already_in_group(member.name, existing_lab_group.name))
+        await ctx.send(btm.message_member_already_in_group(get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group_name))
     elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
@@ -350,7 +351,7 @@ async def join_group(ctx, member: discord.Member, group: Union[int, str]):
         # Message to general channel
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
         if general_channel:
-            await general_channel.send(btm.message_member_joined_group(member.name, new_lab_group_name))
+            await general_channel.send(btm.message_member_joined_group(get_nick(member), new_lab_group_name))
 
 
 async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
@@ -366,13 +367,13 @@ async def leave_group(ctx, member: discord.Member, show_not_in_group_error: bool
         # Message to group text channel
         text_channel = hpf.existing_member_lab_text_channel(member)
         if text_channel:
-            await text_channel.send(btm.message_member_left_group(member.name, existing_lab_role.name))
+            await text_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_role.name))
         # Message to general channel
         general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
         if general_channel:
-            await general_channel.send(btm.message_member_left_group(member.name, existing_lab_role.name))
+            await general_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_role.name))
     elif show_not_in_group_error:
-        await ctx.send(btm.message_member_not_in_group(member.name))
+        await ctx.send(btm.message_member_not_in_group(get_nick(member)))
 
 """
 ####################################################################
@@ -390,11 +391,11 @@ async def labgroup_command(ctx):
 @commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def group_move_to_subcommand(ctx, member_name: str, group: Union[int, str]):
-    guild = ctx.guild
-    member = discord.utils.get(guild.members, name=member_name)
+async def group_move_to_subcommand(ctx, member_mention: discord.Member, group: Union[int, str]):
+    # guild = ctx.guild
+    member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
     if not member:
-        await ctx.send(btm.message_member_not_exists(member_name))
+        await ctx.send(btm.message_member_not_exists(member_mention.nick))
     elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
         await ctx.send(
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,

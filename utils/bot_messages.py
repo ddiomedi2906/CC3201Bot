@@ -2,6 +2,7 @@
 from typing import List
 
 import discord
+from utils.helper_functions import get_nick
 
 """
 ####################################################################
@@ -125,7 +126,7 @@ def get_emoji_group(number: int, letter: str = 'g') -> str:
     return f"{aux_map_letter_to_emoji(letter)} {' '.join(L)}"
 
 def message_list_group_members(group: int, members: List) -> str:
-    member_list = '\n - '.join([""] + [member.name for member in members])
+    member_list = '\n - '.join([""] + [get_nick(member) for member in members])
     return f"{get_emoji_group(group)}`{member_list}`"
 
 def message_no_members() -> str:
@@ -145,7 +146,7 @@ def message_call_for_help(group_name: str, available_members: List[discord.Membe
     return f"**{group_name}** is calling for help. \n {members_string}"
 
 def message_help_on_the_way(member: discord.Member, show_mention: bool = False) -> str:
-    return f"**{member.mention if show_mention else member.name}** on the way!"
+    return f"**{member.mention if show_mention else get_nick(member)}** on the way!"
 
 def message_member_not_in_group_for_help() -> str:
     return f"You have to be part of a group to raise your hand. Try using `!labgroup join <number>` :)"

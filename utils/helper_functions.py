@@ -97,3 +97,7 @@ def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discor
             num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
             return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
     return None
+
+
+def get_nick(member: discord.Member) -> str:
+    return member.nick if member.nick else member.name
