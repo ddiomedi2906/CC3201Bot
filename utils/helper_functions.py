@@ -10,6 +10,11 @@ import discord
 ####################################################################
 """
 
+def get_lab_group_number(group_name: str) -> Optional[int]:
+    if re.search("Group[\s]+([0-9]+)", group_name):
+        return int(re.search("Group[\s]+([0-9]+)", group_name).group(1))
+    return None
+
 def get_lab_group_name(number: int):
     return f"Group {number:2}"
 
@@ -51,6 +56,9 @@ def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optio
 
 def all_existing_lab_roles(guild: discord.Guild) -> List[discord.Role]:
     return list(filter(lambda r: re.search("member-group\s+[0-9]+", r.name), guild.roles))
+
+def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
+    return list(filter(lambda m: existing_member_lab_role(m) is None, guild.members))
 
 
 def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
