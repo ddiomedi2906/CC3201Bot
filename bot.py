@@ -323,6 +323,29 @@ def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
         return []
     return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
 
+import random
+import time
+
+# TODO: random join
+async def aux_random_join(ctx, member: discord.Member, available_existing_groups: List[discord.CategoryChannel]):
+    if not member.nick:
+        await ctx.send(btm.message_member_need_name_error(member))
+        return available_existing_groups
+    while len(available_existing_groups) > 0:
+        random_lab_group = random.choice(available_existing_groups)
+        random_group = hpf.get_lab_group_number(random_lab_group.name)
+        if random_group and len(get_students_in_group(ctx, random_group)) < MAX_STUDENTS_PER_GROUP:
+            success = await aux_join_group(ctx, member, random_group)
+            if success:
+                return available_existing_groups
+        available_existing_groups.remove(random_lab_group)
+    new_group = await aux_create_group(ctx)
+    new_group_number = hpf.get_lab_group_number(new_group.name)
+    if await aux_join_group(ctx, member, new_group_number):
+        ctx.send(btm.message_default_error())
+    available_existing_groups.append(new_group)
+    return available_existing_groups
+
 
 async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]):
     guild = ctx.guild
@@ -416,6 +439,54 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
 async def join_command(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
         await aux_join_group(ctx, ctx.author, group)
+
+@bot.command(name='random-join', help='Join to a random available group.')
+@commands.cooldown(rate=1, per=1)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def random_join_command(ctx, member_mention: discord.Member, *args):
+    async with ctx.channel.typing():
+        member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
+        if not member:
+            await ctx.send(btm.message_member_not_exists(member_mention.nick))
+            return
+        excluded_groups: List[int] = []
+        for arg in args:
+            try:
+                excluded_groups.append(int(arg))
+            except Exception:
+                await ctx.send("All extra arguments should be integers!")
+                return
+        print(excluded_groups)
+        available_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), ctx.guild.categories))
+        await aux_random_join(ctx, member, [group for group in available_lab_groups if hpf.get_lab_group_number(group.name) and hpf.get_lab_group_number(group.name) not in excluded_groups])
+
+@bot.command(name='random-join-all', help='Assign members with no group to a random available group.', hidden=True)
+@commands.cooldown(rate=1, per=1)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def random_join_all_command(ctx, *args):
+    async with ctx.channel.typing():
+        # Get excluded groups
+        excluded_groups: List[int] = []
+        for arg in args:
+            try:
+                excluded_groups.append(int(arg))
+            except Exception:
+                ctx.send("All extra arguments should be integers!")
+                return
+        # Get available groups
+        available_lab_groups = []
+        for group in ctx.guild.categories:
+            group_number = hpf.get_lab_group_number(group.name)
+            if group_number and group_number not in excluded_groups:
+                available_lab_groups.append(group)
+        no_group_members = hpf.all_members_with_no_group(ctx.guild)
+        # Assign groups
+        for member in no_group_members:
+            if member != bot.user and member.status == discord.Status.online \
+                    and not member_in_teaching_team(member, ctx.guild):
+                available_lab_groups = await aux_random_join(ctx, member, available_lab_groups)
 
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
