@@ -409,10 +409,9 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
 ####################################################################
 """
 
-
-@bot.group(name='group', invoke_without_command=True, hidden=True)
-async def labgroup_command(ctx):
-    await ctx.channel.send("Base `labgroup` command. Subcommands: `join <num>` - `leave <num>`")
+@bot.command(name='nickname', help='Set your nickname.', hidden=True)
+async def nickname_command(ctx, nickname: str):
+    await ctx.author.edit(nick=nickname)
 
 
 @bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
