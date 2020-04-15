@@ -2,7 +2,6 @@ import re
 from typing import Union, Optional, List
 
 import discord
-from discord import Role
 
 
 """
@@ -50,12 +49,12 @@ def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optio
     return discord.utils.get(guild.channels, name=get_voice_channel_name(group))
 
 
-def all_existing_lab_roles(guild: discord.Guild) -> List[Role]:
+def all_existing_lab_roles(guild: discord.Guild) -> List[discord.Role]:
     return list(filter(lambda r: re.search("member-group\s+[0-9]+", r.name), guild.roles))
 
 
 def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
-    return int(re.sub("member-group\s+([0-9]+)", r"\1", role.name)) if re.search("member-group\s+[0-9]+", role.name) else None
+    return int(re.search("member-group\s+([0-9]+)", role.name).group(1)) if re.search("member-group\s+[0-9]+", role.name) else None
 
 
 def existing_group_number(member: discord.Member) -> Optional[int]:
@@ -67,7 +66,7 @@ def existing_group_number(member: discord.Member) -> Optional[int]:
     return None
 
 
-def existing_member_lab_role(member: discord.Member) -> Optional[Role]:
+def existing_member_lab_role(member: discord.Member) -> Optional[discord.Role]:
     member_roles = member.roles
     for role in member_roles:
         if re.search("member-group\s+[0-9]+", role.name):
