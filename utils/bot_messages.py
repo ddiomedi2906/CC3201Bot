@@ -55,7 +55,7 @@ def message_member_joined_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has joined to **{group_name}!**"
 
 def message_member_need_name_error(member: discord.Member) -> str:
-    return f"Hey **{member.mention}**, set your nickname or use `!nickname <your_name>` before joining a group."
+    return f"Hey **{member.mention}**, set your nickname before joining a group."
 
 def message_mention_member_when_join_group(member: discord.Member, group_name: str) -> str:
     return f"**{member.mention}** has joined to **{group_name}!**"
@@ -95,7 +95,7 @@ def message_allow_all_success(p_masks: List[str], roles: List[discord.Role]) -> 
         f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
 
 def message_deny_all_success(p_masks: List[str], roles: List[discord.Role]) -> str:
-    return f"Permission{'s ' if len(p_masks) > 1 else ' '}{'|'.join(p_masks)} denied" + \
+    return f"Permission{'s ' if len(p_masks) > 1 else ' '}{'|'.join(p_masks)} denied " + \
         f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
 
 
