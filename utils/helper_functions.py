@@ -33,18 +33,21 @@ def get_lab_group(guild: discord.Guild, group: Union[int, str]) -> Optional[disc
 
 
 def get_lab_role(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.Role]:
-    name = get_role_name(group) if type(group) == int else group
-    return discord.utils.get(guild.roles, name=name)
+    if type(group) == str and re.search("Group[\s]+([0-9]+)", group):
+        group = int(re.search("Group[\s]+([0-9]+)", group).group(1))
+    return discord.utils.get(guild.roles, name=get_role_name(group))
 
 
 def get_lab_text_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.TextChannel]:
-    name = get_text_channel_name(group) if type(group) == int else group
-    return discord.utils.get(guild.channels, name=name)
+    if type(group) == str and re.search("Group[\s]+([0-9]+)", group):
+        group = int(re.search("Group[\s]+([0-9]+)", group).group(1))
+    return discord.utils.get(guild.channels, name=get_text_channel_name(group))
 
 
 def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.VoiceChannel]:
-    name = get_voice_channel_name(group) if type(group) == int else group
-    return discord.utils.get(guild.channels, name=name)
+    if type(group) == str and re.search("Group[\s]+([0-9]+)", group):
+        group = int(re.search("Group[\s]+([0-9]+)", group).group(1))
+    return discord.utils.get(guild.channels, name=get_voice_channel_name(group))
 
 
 def all_existing_lab_roles(guild: discord.Guild) -> List[Role]:
