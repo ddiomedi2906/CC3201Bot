@@ -5,7 +5,7 @@ import discord
 
 from aux_commands.create_delete_group import aux_create_group
 from aux_commands.join_leave_group import get_students_in_group, aux_join_group
-from bot import MAX_STUDENTS_PER_GROUP
+from global_variables import MAX_STUDENTS_PER_GROUP
 from utils import bot_messages as btm, helper_functions as hpf
 
 """

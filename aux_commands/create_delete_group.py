@@ -4,7 +4,7 @@ from typing import Optional, Union
 import discord
 from discord import Role
 
-from bot import STUDENT_ROLE_NAME, GENERAL_CHANNEL_NAME
+from global_variables import STUDENT_ROLE_NAME, GENERAL_CHANNEL_NAME
 from utils.permission_mask import PMask
 from aux_commands.join_leave_group import aux_leave_group
 from utils import helper_functions as hpf, bot_messages as btm

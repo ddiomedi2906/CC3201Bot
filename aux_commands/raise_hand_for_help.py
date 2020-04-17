@@ -3,6 +3,7 @@ from typing import List
 
 import discord
 
+from global_variables import TT_ROLES, GENERAL_CHANNEL_NAME
 from utils import helper_functions as hpf, bot_messages as btm
 
 """
@@ -12,22 +13,22 @@ from utils import helper_functions as hpf, bot_messages as btm
 """
 
 
-def get_teaching_team_roles(guild: discord.Guild, TT_role_names: List[str]) -> List[discord.Role]:
-    return list(filter(lambda r: r.name in TT_role_names, guild.roles))
+def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
+    return list(filter(lambda r: r.name in TT_ROLES, guild.roles))
 
 
-def get_teaching_team_members(guild: discord.Guild, TT_role_names: List[str]) -> List[discord.Member]:
-    TT_roles = get_teaching_team_roles(guild, TT_role_names)
+def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
+    tt_roles = get_teaching_team_roles(guild)
     available_team = []
-    for role in TT_roles:
+    for role in tt_roles:
         available_team.extend(get_available_members_from_role(role))
     return available_team
 
 
-def member_in_teaching_team(member: discord.Member, guild: discord.Guild, TT_role_names: List[str]) -> bool:
-    TT_roles = get_teaching_team_roles(guild, TT_role_names)
+def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> bool:
+    tt_roles = get_teaching_team_roles(guild)
     for member_role in member.roles:
-        if discord.utils.get(TT_roles, name=member_role.name):
+        if discord.utils.get(tt_roles, name=member_role.name):
             return True
     return False
 
@@ -63,16 +64,16 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
         await member.add_roles(lab_group_role)
 
 
-async def aux_raise_hand(ctx, general_channel_name: str, tt_roles: List[str]):
+async def aux_raise_hand(ctx):
     member = ctx.author
     existing_lab_group = hpf.existing_member_lab_group(member)
-    general_channel = discord.utils.get(member.guild.channels, name=general_channel_name)
+    general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
     if not existing_lab_group:
         await ctx.channel.send(btm.message_member_not_in_group_for_help())
     elif ctx.channel != hpf.existing_member_lab_text_channel(member):
         await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
     elif general_channel:
-        online_team = get_teaching_team_members(ctx.author.guild, tt_roles)
+        online_team = get_teaching_team_members(ctx.author.guild)
         available_team = list(filter(lambda m: hpf.existing_member_lab_group(m) is None, online_team))
         if available_team:
             await ctx.channel.send(btm.message_asking_for_help())

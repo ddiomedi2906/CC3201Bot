@@ -1,20 +1,19 @@
 # bot.py
-import os
 import re
 import random
 from typing import Union, Optional, List
-import functools
-import operator
 
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp
 from aux_commands.clean_group import aux_clean_group
+from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
+from utils.helper_functions import get_nick
+from utils.permission_mask import PMask
 
 # TODO: refactor this file, modularize
 # TODO: when leaving a group, move back to general
@@ -23,21 +22,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 # TODO: make-group command
 # TODO: set main
 # TODO: spanish messages
-from utils.helper_functions import get_nick
-from utils.permission_mask import PMask
-
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-# GUILD = os.getenv('DISCORD_GUILD')
-GUILD_ID = os.getenv('DISCORD_GUILD_ID')
-PROFESSOR_ROLE_NAME = os.getenv('PROFESSOR_ROLE_NAME')
-HEAD_TA_ROLE_NAME = os.getenv('AUXILIAR_ROLE_NAME')
-TA_ROLE_NAME = os.getenv('ASSISTANT_ROLE_NAME')
-STUDENT_ROLE_NAME = os.getenv('STUDENT_ROLE_NAME')
-GENERAL_CHANNEL_NAME = os.getenv('GENERAL_CHANNEL_NAME')
-MAX_STUDENTS_PER_GROUP = 3
-TT_ROLES = [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME]
-
 bot = commands.Bot(command_prefix='!')
 
 """
@@ -60,13 +44,17 @@ async def on_ready():
     all_allow = discord.Permissions.all()
     almost_all = discord.Permissions(PMask.ALL_BUT_ADMIN_AND_GUILD | PMask.STREAM)
     text_and_voice_allow = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
-    TEST = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
-    #for permission, value in text_and_voice_allow:
+    # TEST = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
+    # for permission, value in text_and_voice_allow:
     #    print(f"{value:5}\t{permission}")
-    await cdg.create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
-    await cdg.create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
-    await cdg.create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True, mentionable=True)
-    await cdg.create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(), hoist=True, mentionable=True)
+    await cdg.create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(),
+                              hoist=True, mentionable=True)
+    await cdg.create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True,
+                              mentionable=True)
+    await cdg.create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True,
+                              mentionable=True)
+    await cdg.create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(),
+                              hoist=True, mentionable=True)
     print("Ready to roll!")
 
 
@@ -125,6 +113,7 @@ async def on_command_error(ctx, error):
 ####################################################################
 """
 
+
 @bot.command(name='create-group', help='Create a new lab group.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
@@ -167,10 +156,6 @@ async def delete_all_groups(ctx):
 ####################################################################
 """
 
-#@bot.command(name='nickname', help='Set your nickname.', hidden=True)
-async def nickname_command(ctx, nickname: str):
-    await ctx.author.edit(nick=nickname)
-
 
 @bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
 @commands.cooldown(rate=1, per=5)
@@ -190,6 +175,20 @@ async def join_command(ctx, group: Union[int, str]):
         await jlg.aux_join_group(ctx, ctx.author, group)
 
 
+@bot.command(name='leave', help='Leave a group. Need to provide the group number.')
+@commands.cooldown(rate=1, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
+async def leave_command(ctx):
+    async with ctx.channel.typing():
+        await jlg.aux_leave_group(ctx, ctx.author)
+
+"""
+####################################################################
+################## RANDOM JOIN GROUP COMMANDS ######################
+####################################################################
+"""
+
+
 @bot.command(name='random-join', help='Join to a random available group.')
 @commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
@@ -204,12 +203,15 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
         for arg in args:
             try:
                 excluded_groups.append(int(arg))
-            except Exception:
+            except ValueError:
                 await ctx.send("All extra arguments should be integers!")
                 return
         print(excluded_groups)
         available_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), ctx.guild.categories))
-        await rjg.aux_random_join(ctx, member, [group for group in available_lab_groups if hpf.get_lab_group_number(group.name) and hpf.get_lab_group_number(group.name) not in excluded_groups])
+        available_lab_groups = [group for group in available_lab_groups
+                                if hpf.get_lab_group_number(group.name) and
+                                hpf.get_lab_group_number(group.name) not in excluded_groups]
+        await rjg.aux_random_join(ctx, member, available_lab_groups)
 
 
 @bot.command(name='random-join-all', help='Assign members with no group to a random available group.', hidden=True)
@@ -223,7 +225,7 @@ async def random_join_all_command(ctx, *args):
         for arg in args:
             try:
                 excluded_groups.append(int(arg))
-            except Exception:
+            except ValueError:
                 ctx.send("All extra arguments should be integers!")
                 return
         # Get available groups
@@ -236,16 +238,8 @@ async def random_join_all_command(ctx, *args):
         # Assign groups
         for member in no_group_members:
             if member != bot.user and member.status == discord.Status.online \
-                    and not rhh.member_in_teaching_team(member, ctx.guild, TT_ROLES):
+                    and not rhh.member_in_teaching_team(member, ctx.guild):
                 available_lab_groups = await rjg.aux_random_join(ctx, member, available_lab_groups)
-
-
-@bot.command(name='leave', help='Leave a group. Need to provide the group number.')
-@commands.cooldown(rate=1, per=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def leave_command(ctx):
-    async with ctx.channel.typing():
-        await jlg.aux_leave_group(ctx, ctx.author)
 
 """
 ####################################################################
@@ -277,6 +271,7 @@ async def clean_all_command(ctx):
 ######################### GROUP LIST ###########################
 ####################################################################
 """
+
 
 def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message: bool = True) -> Optional[str]:
     group = int(re.sub(r"Group[\s]+([0-9]+)", r"\1", group)) if type(group) == str else group
@@ -318,7 +313,7 @@ async def get_lab_list(ctx):
             message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
             if message:
                 await ctx.send(message)
-        #if list_string:
+        # if list_string:
         #    await ctx.send("Lab list:\n" + "\n".join(list_string))
 
 """
@@ -374,12 +369,13 @@ async def deny_all(ctx, *args):
 """
 
 
-@bot.command(name='raise-hand', aliases=[get_unicode_emoji_from_alias('raised_hand'), 'rh'], help='Raise your virtual hand asking for any help.')
+@bot.command(name='raise-hand', aliases=[get_unicode_emoji_from_alias('raised_hand'), 'rh'],
+             help='Raise your virtual hand asking for any help.')
 @commands.cooldown(rate=1, per=2)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def raise_hand(ctx):
     async with ctx.channel.typing():
-        await rhh.aux_raise_hand(ctx, GENERAL_CHANNEL_NAME, TT_ROLES)
+        await rhh.aux_raise_hand(ctx)
 
 
 """
@@ -387,6 +383,7 @@ async def raise_hand(ctx):
 ############################### MISC ###############################
 ####################################################################
 """
+
 
 @bot.command(name='whereis', help='Find your group.')
 @commands.cooldown(rate=60, per=1)
@@ -413,7 +410,7 @@ async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
 async def salute(ctx):
     await ctx.send(get_unicode_emoji_from_alias('wave'))
     # await ctx.author.create_dm()
-    #await ctx.author.dm_channel.send(f'Hi {ctx.author.name}, welcome to my Discord server!')
+    # await ctx.author.dm_channel.send(f'Hi {ctx.author.name}, welcome to my Discord server!')
 
 
 """
