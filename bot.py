@@ -1,13 +1,13 @@
 # bot.py
 import re
 import random
-from typing import Union, Optional, List
+from typing import Union, List
 
 import discord
 from discord.ext import commands
 
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
-    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp
+    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
 from aux_commands.clean_group import aux_clean_group
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
@@ -201,7 +201,7 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
                 await ctx.send("All extra arguments should be integers!")
                 return
         print(excluded_groups)
-        available_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), ctx.guild.categories))
+        available_lab_groups = hpf.all_existing_lab_groups(ctx.guild)
         available_lab_groups = [group for group in available_lab_groups
                                 if hpf.get_lab_group_number(group.name) and
                                 hpf.get_lab_group_number(group.name) not in excluded_groups]
@@ -266,26 +266,12 @@ async def clean_all_command(ctx):
 """
 
 
-def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message: bool = True) -> Optional[str]:
-    group = int(re.sub(r"Group[\s]+([0-9]+)", r"\1", group)) if type(group) == str else group
-    guild = ctx.guild
-    existing_role = hpf.get_lab_role(guild, group)
-    if not existing_role:
-        return btm.message_group_not_exists_error(group)
-    elif not existing_role.members and show_empty_error_message:
-        return btm.message_no_members()
-    elif existing_role.members:
-        return btm.message_list_group_members(group, existing_role.members)
-    else:
-        return None
-
-
 @bot.command(name='members', help="List lab group's members.", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_group_members(ctx, group: int):
     async with ctx.channel.typing():
-        message = aux_get_group_members(ctx, group)
+        message = lg.aux_get_group_members(ctx, group)
         if message:
             await ctx.send(message)
 
@@ -295,19 +281,8 @@ async def get_group_members(ctx, group: int):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
     async with ctx.channel.typing():
-        guild = ctx.guild
-        existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), guild.categories))
-        if not existing_lab_groups:
-            await ctx.send(btm.message_no_groups())
-            return
-        list_string = []
-        await ctx.send("Lab list:\n")
-        for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
-            message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
-            if message:
-                await ctx.send(message)
-        # if list_string:
-        #    await ctx.send("Lab list:\n" + "\n".join(list_string))
+        await lg.aux_send_list_by_chunks(ctx)
+
 
 """
 ####################################################################
