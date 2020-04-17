@@ -76,19 +76,6 @@ async def on_member_join(member):
     role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     await member.add_roles(role)
     print(f'Role "{role}" assigned to {member}')
-
-
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-    if re.search(r"!.+?", message.content):
-        await bot.process_commands(message)
-    elif message.role_mentions:
-        # Check professors
-        role_members = discord.utils.get(message.role_mentions, name=PROFESSOR_ROLE_NAME)
-        online_member_names = '\n - '.join([get_nick(member) for member in role_members if member.status == discord.Status.online])
-        print(f"People available: \n{online_member_names}")
     
 
 @bot.event
@@ -313,7 +300,7 @@ def aux_get_group_members(ctx, group: Union[int, str], show_empty_error_message:
         return None
 
 
-@bot.command(name='group-members', help="List lab group's members.", hidden=True)
+@bot.command(name='members', help="List lab group's members.", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_group_members(ctx, group: int):
