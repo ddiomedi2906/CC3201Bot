@@ -11,7 +11,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
-    random_join_group as rjg, raise_hand_for_help as rhh
+    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp
 from aux_commands.clean_group import aux_clean_group
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
@@ -344,108 +344,49 @@ async def get_lab_list(ctx):
 
 """
 ####################################################################
-######################### GROUP EDIT ###############################
+################### GROUP PERMISSION EDIT ##########################
 ####################################################################
 """
 
 
-@bot.group(name='permission', aliases=['p'], invoke_without_command=True, hidden=True)
-async def permission_command(ctx):
-    await ctx.channel.send("Base `permission` command. \n Subcommands: \n `allow <role> <group> <mask>` \n `deny <role> <group> <mask>` \n `allow-all <mask>` \n `deny-all <mask>`")
-
-
-@permission_command.command(name='allow-to', aliases=["at"], help=".", hidden=True)
+@bot.command(name='allow-to', aliases=["at"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def allow_to_role(ctx, role_mention: str, group: int, *args):
+async def allow_to_role(ctx, role_mention: discord.Role, group: int, *args):
     async with ctx.channel.typing():
-        role = discord.utils.get(ctx.guild.roles, mention=role_mention)
-        if role and hpf.get_lab_role(ctx.guild, role.name):
-            lab_group = hpf.get_lab_group(ctx.guild, group)
-            print(f"Updating allow permissions of {role} on {lab_group}...")
-            p_masks = []
-            for arg in args:
-                if type(arg) == str and PMask.has_key(arg.upper()):
-                    p_masks.append(arg.upper())
-                else:
-                    await ctx.send(btm.message_permission_mask_not_valid(arg))
-                    return
-            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-            await cdg.update_permission(role, lab_group, allow_mask=overwrite_mask)
-            await ctx.send(btm.message_allow_to_success(p_masks, role, lab_group))
-        elif not role:
-            await ctx.send(btm.message_lab_role_not_exists(role_mention))
-        else:
-            await ctx.send(btm.message_role_permissions_not_modificable_error(role))
+        await adp.aux_allow_to_role(ctx, role_mention, group, *args)
 
 
-@permission_command.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
+@bot.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def deny_to_role(ctx, role_mention: str, group: int, *args):
+async def deny_to_role(ctx, role_mention: discord.Role, group: int, *args):
     async with ctx.channel.typing():
-        role = discord.utils.get(ctx.guild.roles, mention=role_mention)
-        if role and hpf.get_lab_role(ctx.guild, role.name):
-            lab_group = hpf.get_lab_group(ctx.guild, group)
-            print(f"Updating deny permissions of {role} on {lab_group}...")
-            p_masks = []
-            for arg in args:
-                if type(arg) == str and PMask.has_key(arg.upper()):
-                    p_masks.append(arg.upper())
-                else:
-                    await ctx.send(btm.message_permission_mask_not_valid(arg))
-                    return
-            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-            await cdg.update_permission(role, lab_group, deny_mask=overwrite_mask)
-            await ctx.send(btm.message_deny_to_success(p_masks, role, lab_group))
-        elif not role:
-            await ctx.send(btm.message_lab_role_not_exists(role_mention))
-        else:
-            await ctx.send(btm.message_role_permissions_not_modificable_error(role))
+        await adp.aux_deny_to_role(ctx, role_mention, group, *args)
 
 
-@permission_command.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
+@bot.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def allow_all(ctx, *args):
     async with ctx.channel.typing():
         existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
-        p_masks = []
-        for arg in args:
-            if type(arg) == str and PMask.has_key(arg.upper()):
-                p_masks.append(arg.upper())
-            else:
-                await ctx.send(btm.message_permission_mask_not_valid(arg))
-                return
         for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
             group = hpf.existing_group_number_from_role(existing_lab_role)
-            lab_group = hpf.get_lab_group(ctx.guild, group)
-            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-            print(f"Updating allow permissions on {lab_group}...")
-            await cdg.update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
-        await ctx.send(btm.message_allow_all_success(p_masks, existing_lab_roles))
+            await adp.aux_allow_to_role(ctx, existing_lab_role, group, *args)
+        await ctx.send(btm.message_allow_all_success(list(*args), existing_lab_roles))
 
 
-@permission_command.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
+@bot.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def deny_all(ctx, *args):
     async with ctx.channel.typing():
         existing_lab_roles = hpf.all_existing_lab_roles(ctx.guild)
-        p_masks = []
-        for arg in args:
-            if type(arg) == str and PMask.has_key(arg.upper()):
-                p_masks.append(arg.upper())
-            else:
-                await ctx.send(f"{arg} is not a valid permission mask!")
-                return
         for existing_lab_role in sorted(existing_lab_roles, key=lambda g: g.name, reverse=True):
             group = hpf.existing_group_number_from_role(existing_lab_role)
-            lab_group = hpf.get_lab_group(ctx.guild, group)
-            overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-            print(f"Updating deny permissions on {lab_group}...")
-            await cdg.update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
-        await ctx.send(btm.message_deny_all_success(p_masks, existing_lab_roles))
+            await adp.aux_allow_to_role(ctx, existing_lab_role, group, *args)
+        await ctx.send(btm.message_deny_all_success(list(*args), existing_lab_roles))
 
 """
 ####################################################################
