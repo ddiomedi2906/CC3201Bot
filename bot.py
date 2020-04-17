@@ -44,15 +44,12 @@ async def on_ready():
     all_allow = discord.Permissions.all()
     almost_all = discord.Permissions(PMask.ALL_BUT_ADMIN_AND_GUILD | PMask.STREAM)
     text_and_voice_allow = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
-    # TEST = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
-    # for permission, value in text_and_voice_allow:
-    #    print(f"{value:5}\t{permission}")
     await cdg.create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(),
                               hoist=True, mentionable=True)
-    await cdg.create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True,
-                              mentionable=True)
-    await cdg.create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True,
-                              mentionable=True)
+    await cdg.create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(),
+                              hoist=True, mentionable=True)
+    await cdg.create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(),
+                              hoist=True, mentionable=True)
     await cdg.create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(),
                               hoist=True, mentionable=True)
     print("Ready to roll!")
@@ -132,7 +129,6 @@ async def create_many_groups(ctx, num_groups: int):
 
 
 @bot.command(name='delete-group', help='Delete a lab group. Need to provide the group number.', hidden=True)
-@commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def delete_group(ctx, group: Union[int, str]):
@@ -158,7 +154,6 @@ async def delete_all_groups(ctx):
 
 
 @bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
-@commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def move_to_command(ctx, member_mention: discord.Member, group: Union[int, str]):
@@ -176,7 +171,6 @@ async def join_command(ctx, group: Union[int, str]):
 
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
-@commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def leave_command(ctx):
     async with ctx.channel.typing():
@@ -215,7 +209,6 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
 
 
 @bot.command(name='random-join-all', help='Assign members with no group to a random available group.', hidden=True)
-@commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def random_join_all_command(ctx, *args):
@@ -324,7 +317,6 @@ async def get_lab_list(ctx):
 
 
 @bot.command(name='allow-to', aliases=["at"], help=".", hidden=True)
-@commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def allow_to_role(ctx, role_mention: discord.Role, group: int, *args):
     async with ctx.channel.typing():
@@ -332,7 +324,6 @@ async def allow_to_role(ctx, role_mention: discord.Role, group: int, *args):
 
 
 @bot.command(name='deny-to', aliases=["dt"], help=".", hidden=True)
-@commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def deny_to_role(ctx, role_mention: discord.Role, group: int, *args):
     async with ctx.channel.typing():
@@ -340,7 +331,7 @@ async def deny_to_role(ctx, role_mention: discord.Role, group: int, *args):
 
 
 @bot.command(name='allow-all', aliases=["aall"], help=".", hidden=True)
-@commands.cooldown(rate=1, per=1)
+@commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def allow_all(ctx, *args):
     async with ctx.channel.typing():
@@ -352,7 +343,7 @@ async def allow_all(ctx, *args):
 
 
 @bot.command(name='deny-all', aliases=["dall"], help=".", hidden=True)
-@commands.cooldown(rate=1, per=1)
+@commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def deny_all(ctx, *args):
     async with ctx.channel.typing():
@@ -387,7 +378,7 @@ async def raise_hand(ctx):
 
 @bot.command(name='whereis', help='Find your group.')
 @commands.cooldown(rate=60, per=1)
-async def whereis_command(ctx, member: discord.Member):
+async def where_is_command(ctx, member: discord.Member):
     lab_group = hpf.existing_member_lab_group(member)
     if lab_group:
         await ctx.send(btm.message_where_is_member(member, lab_group))
@@ -406,7 +397,7 @@ async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
 
 
 @bot.command(name='salute', help='Say hello to this friendly bot.')
-@commands.cooldown(rate=60, per=1)
+@commands.cooldown(rate=10, per=1)
 async def salute(ctx):
     await ctx.send(get_unicode_emoji_from_alias('wave'))
     # await ctx.author.create_dm()
