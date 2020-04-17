@@ -15,7 +15,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 from utils.helper_functions import get_nick
 from utils.permission_mask import PMask
 
-# TODO: refactor this file, modularize
 # TODO: when leaving a group, move back to general
 # TODO: when someome from the teaching team go for help, don't look up mention on message
 # TODO: fix list command when messages are too big
@@ -189,23 +188,7 @@ async def leave_command(ctx):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def random_join_command(ctx, member_mention: discord.Member, *args):
     async with ctx.channel.typing():
-        member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
-        if not member:
-            await ctx.send(btm.message_member_not_exists(member_mention.nick))
-            return
-        excluded_groups: List[int] = []
-        for arg in args:
-            try:
-                excluded_groups.append(int(arg))
-            except ValueError:
-                await ctx.send("All extra arguments should be integers!")
-                return
-        print(excluded_groups)
-        available_lab_groups = hpf.all_existing_lab_groups(ctx.guild)
-        available_lab_groups = [group for group in available_lab_groups
-                                if hpf.get_lab_group_number(group.name) and
-                                hpf.get_lab_group_number(group.name) not in excluded_groups]
-        await rjg.aux_random_join(ctx, member, available_lab_groups)
+        await rjg.aux_random_join(ctx, member_mention, *args)
 
 
 @bot.command(name='random-join-all', help='Assign members with no group to a random available group.', hidden=True)
@@ -213,26 +196,7 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def random_join_all_command(ctx, *args):
     async with ctx.channel.typing():
-        # Get excluded groups
-        excluded_groups: List[int] = []
-        for arg in args:
-            try:
-                excluded_groups.append(int(arg))
-            except ValueError:
-                ctx.send("All extra arguments should be integers!")
-                return
-        # Get available groups
-        available_lab_groups = []
-        for group in ctx.guild.categories:
-            group_number = hpf.get_lab_group_number(group.name)
-            if group_number and group_number not in excluded_groups:
-                available_lab_groups.append(group)
-        no_group_members = hpf.all_members_with_no_group(ctx.guild)
-        # Assign groups
-        for member in no_group_members:
-            if member != bot.user and member.status == discord.Status.online \
-                    and not rhh.member_in_teaching_team(member, ctx.guild):
-                available_lab_groups = await rjg.aux_random_join(ctx, member, available_lab_groups)
+        await rjg.aux_random_join_all(ctx, *args)
 
 """
 ####################################################################

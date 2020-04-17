@@ -65,7 +65,7 @@ def all_existing_lab_groups(guild: discord.Guild) -> List[discord.CategoryChanne
 
 
 def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
-    return list(filter(lambda m: existing_member_lab_role(m) is None, guild.members))
+    return [member for member in guild.members if existing_member_lab_role(member) is None]
 
 
 def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
