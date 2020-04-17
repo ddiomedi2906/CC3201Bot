@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from aux_commands.create_delete_groups import create_new_role, update_permission, update_previous_lab_groups_permission, \
+from aux_commands.create_delete_group import create_new_role, update_permission, update_previous_lab_groups_permission, \
     aux_create_group, aux_delete_group
 from utils import bot_messages as btm
 from utils import helper_functions as hpf
