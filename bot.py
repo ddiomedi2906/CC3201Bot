@@ -10,14 +10,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from aux_commands.create_delete_group import create_new_role, update_permission, update_previous_lab_groups_permission, \
-    aux_create_group, aux_delete_group
-from aux_commands.join_leave_group import get_students_in_group, aux_join_group, aux_leave_group
-from aux_commands.raise_hand_for_help import get_available_members_from_role, go_for_help, get_teaching_team_members, \
-    member_in_teaching_team
-from aux_commands.random_join_group import aux_random_join
-from utils import bot_messages as btm
-from utils import helper_functions as hpf
+from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
+    random_join_group as rjg, raise_hand_for_help as rhh
+from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
 # TODO: refactor this file, modularize
@@ -40,6 +35,7 @@ TA_ROLE_NAME = os.getenv('ASSISTANT_ROLE_NAME')
 STUDENT_ROLE_NAME = os.getenv('STUDENT_ROLE_NAME')
 GENERAL_CHANNEL_NAME = os.getenv('GENERAL_CHANNEL_NAME')
 MAX_STUDENTS_PER_GROUP = 3
+TT_ROLES = [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME]
 
 bot = commands.Bot(command_prefix='!')
 
@@ -66,10 +62,10 @@ async def on_ready():
     TEST = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
     #for permission, value in text_and_voice_allow:
     #    print(f"{value:5}\t{permission}")
-    await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
-    await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
-    await create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True, mentionable=True)
-    await create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(), hoist=True, mentionable=True)
+    await cdg.create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
+    await cdg.create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
+    await cdg.create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True, mentionable=True)
+    await cdg.create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(), hoist=True, mentionable=True)
     print("Ready to roll!")
 
 
@@ -88,17 +84,10 @@ async def on_message(message):
     if re.search(r"!.+?", message.content):
         await bot.process_commands(message)
     elif message.role_mentions:
-        available_people = []
         # Check professors
-        professor_mention = discord.utils.get(message.role_mentions, name=PROFESSOR_ROLE_NAME)
-        available_people.extend(get_available_members_from_role(professor_mention))
-        # Check Head TAs
-        auxiliar_mention = discord.utils.get(message.role_mentions, name=HEAD_TA_ROLE_NAME)
-        available_people.extend(get_available_members_from_role(auxiliar_mention))
-        # Check TAs
-        assistant_mention = discord.utils.get(message.role_mentions, name=TA_ROLE_NAME)
-        available_people.extend(get_available_members_from_role(assistant_mention))
-        print(f"People available: {' - '.join([get_nick(member) for member in available_people])}")
+        role_members = discord.utils.get(message.role_mentions, name=PROFESSOR_ROLE_NAME)
+        online_member_names = '\n - '.join([get_nick(member) for member in role_members if member.status == discord.Status.online])
+        print(f"People available: \n{online_member_names}")
     
 
 @bot.event
@@ -110,7 +99,7 @@ async def on_reaction_add(reaction, user):
                 group = int(re.match(r"\*\*Group[\s]+(\d+).*", message.content).group(1))
                 group_name = hpf.get_lab_group_name(group)
                 lab_group = discord.utils.get(user.guild.channels, name=group_name)
-                await go_for_help(member, lab_group, group)
+                await rhh.go_for_help(member, lab_group, group)
                 await reaction.message.channel.send(btm.message_help_on_the_way(member))
                 return
         await message.remove_reaction(reaction, message.author)
@@ -153,7 +142,7 @@ async def on_command_error(ctx, error):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def create_group(ctx):
     async with ctx.channel.typing():
-        await aux_create_group(ctx)
+        await cdg.aux_create_group(ctx)
 
 
 @bot.command(name='create-many-groups', help='Create N new lab groups.', hidden=True)
@@ -162,7 +151,7 @@ async def create_group(ctx):
 async def create_many_groups(ctx, num_groups: int):
     async with ctx.channel.typing():
         for _ in range(num_groups):
-            await aux_create_group(ctx)
+            await cdg.aux_create_group(ctx)
 
 
 @bot.command(name='delete-group', help='Delete a lab group. Need to provide the group number.', hidden=True)
@@ -171,7 +160,7 @@ async def create_many_groups(ctx, num_groups: int):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def delete_group(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
-        await aux_delete_group(ctx, group)
+        await cdg.aux_delete_group(ctx, group)
 
 
 @bot.command(name='delete-all-groups', help='Delete all lab groups.', hidden=True)
@@ -182,7 +171,7 @@ async def delete_all_groups(ctx):
         guild = ctx.guild
         for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
             if re.search(r"Group[\s]+[0-9]+", category.name):
-                await aux_delete_group(ctx, category.name)
+                await cdg.aux_delete_group(ctx, category.name)
 
 """
 ####################################################################
@@ -203,13 +192,13 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
     member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
     if not member:
         await ctx.send(btm.message_member_not_exists(member_mention.nick))
-    elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
+    elif len(jlg.get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
         await ctx.send(
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
                                                    MAX_STUDENTS_PER_GROUP))
     else:
-        await aux_leave_group(ctx, member, show_not_in_group_error=False)
-        await aux_join_group(ctx, member, group)
+        await jlg.aux_leave_group(ctx, member, show_not_in_group_error=False)
+        await jlg.aux_join_group(ctx, member, group)
 
 
 @bot.command(name='join', help='Join to a group. Need to provide the group number.')
@@ -218,7 +207,7 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def join_command(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
-        await aux_join_group(ctx, ctx.author, group)
+        await jlg.aux_join_group(ctx, ctx.author, group)
 
 @bot.command(name='random-join', help='Join to a random available group.')
 @commands.cooldown(rate=1, per=1)
@@ -239,7 +228,7 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
                 return
         print(excluded_groups)
         available_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), ctx.guild.categories))
-        await aux_random_join(ctx, member, [group for group in available_lab_groups if hpf.get_lab_group_number(group.name) and hpf.get_lab_group_number(group.name) not in excluded_groups])
+        await rjg.aux_random_join(ctx, member, [group for group in available_lab_groups if hpf.get_lab_group_number(group.name) and hpf.get_lab_group_number(group.name) not in excluded_groups])
 
 @bot.command(name='random-join-all', help='Assign members with no group to a random available group.', hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -265,8 +254,8 @@ async def random_join_all_command(ctx, *args):
         # Assign groups
         for member in no_group_members:
             if member != bot.user and member.status == discord.Status.online \
-                    and not member_in_teaching_team(member, ctx.guild):
-                available_lab_groups = await aux_random_join(ctx, member, available_lab_groups)
+                    and not rhh.member_in_teaching_team(member, ctx.guild, TT_ROLES):
+                available_lab_groups = await rjg.aux_random_join(ctx, member, available_lab_groups)
 
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
@@ -274,7 +263,7 @@ async def random_join_all_command(ctx, *args):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def leave_command(ctx):
     async with ctx.channel.typing():
-        await aux_leave_group(ctx, ctx.author)
+        await jlg.aux_leave_group(ctx, ctx.author)
 
 """
 ####################################################################
@@ -292,7 +281,7 @@ async def aux_clean_group(ctx, group: Union[int, str]):
     if category and existing_role:
         text_channels = category.text_channels
         for group_member in (existing_role.members if existing_role else []):
-            await aux_leave_group(ctx, group_member, show_not_in_group_error=False)
+            await jlg.aux_leave_group(ctx, group_member, show_not_in_group_error=False)
         for text_channel in text_channels:
             text_channel_name = text_channel.name
             print(f'Cleaning messages in text channels: ({text_channel_name})')
@@ -397,7 +386,7 @@ async def allow_to_role(ctx, role_mention: str, group: int, *args):
                     await ctx.send(btm.message_permission_mask_not_valid(arg))
                     return
             overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-            await update_permission(role, lab_group, allow_mask=overwrite_mask)
+            await cdg.update_permission(role, lab_group, allow_mask=overwrite_mask)
             await ctx.send(btm.message_allow_to_success(p_masks, role, lab_group))
         elif not role:
             await ctx.send(btm.message_lab_role_not_exists(role_mention))
@@ -422,7 +411,7 @@ async def deny_to_role(ctx, role_mention: str, group: int, *args):
                     await ctx.send(btm.message_permission_mask_not_valid(arg))
                     return
             overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
-            await update_permission(role, lab_group, deny_mask=overwrite_mask)
+            await cdg.update_permission(role, lab_group, deny_mask=overwrite_mask)
             await ctx.send(btm.message_deny_to_success(p_masks, role, lab_group))
         elif not role:
             await ctx.send(btm.message_lab_role_not_exists(role_mention))
@@ -448,7 +437,7 @@ async def allow_all(ctx, *args):
             lab_group = hpf.get_lab_group(ctx.guild, group)
             overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
             print(f"Updating allow permissions on {lab_group}...")
-            await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
+            await cdg.update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), allow_mask=overwrite_mask)
         await ctx.send(btm.message_allow_all_success(p_masks, existing_lab_roles))
 
 
@@ -470,7 +459,7 @@ async def deny_all(ctx, *args):
             lab_group = hpf.get_lab_group(ctx.guild, group)
             overwrite_mask = functools.reduce(lambda a, b: operator.ior(a, PMask[b]), p_masks, 0)
             print(f"Updating deny permissions on {lab_group}...")
-            await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
+            await cdg.update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
         await ctx.send(btm.message_deny_all_success(p_masks, existing_lab_roles))
 
 """
@@ -493,7 +482,7 @@ async def raise_hand(ctx):
         elif ctx.channel != hpf.existing_member_lab_text_channel(member):
             await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
         elif general_channel:
-            online_team = get_teaching_team_members(ctx.author.guild)
+            online_team = rhh.get_teaching_team_members(ctx.author.guild, TT_ROLES)
             available_team = list(filter(lambda m: hpf.existing_member_lab_group(m) is None, online_team))
             if available_team:
                 await ctx.channel.send(btm.message_asking_for_help())
