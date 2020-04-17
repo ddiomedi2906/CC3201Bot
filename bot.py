@@ -1,6 +1,7 @@
 # bot.py
 import os
 import re
+import random
 from enum import IntFlag
 from typing import Union, Optional, List
 import functools
@@ -12,6 +13,8 @@ from dotenv import load_dotenv
 
 from aux_commands.create_delete_group import create_new_role, update_permission, update_previous_lab_groups_permission, \
     aux_create_group, aux_delete_group
+from aux_commands.join_leave_group import get_students_in_group, aux_join_group, aux_leave_group
+from aux_commands.random_join_group import aux_random_join
 from utils import bot_messages as btm
 from utils import helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
@@ -191,101 +194,6 @@ async def delete_all_groups(ctx):
         for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
             if re.search(r"Group[\s]+[0-9]+", category.name):
                 await aux_delete_group(ctx, category.name)
-
-"""
-####################################################################
-##################### JOIN/LEAVE GROUP FUNCTIONS ###################
-####################################################################
-"""
-
-
-def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
-    guild = ctx.guild
-    existing_role = hpf.get_lab_role(guild, group)
-    student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
-    if not existing_role:
-        return []
-    return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
-
-import random
-
-
-# TODO: random join
-async def aux_random_join(ctx, member: discord.Member, available_existing_groups: List[discord.CategoryChannel]):
-    if not member.nick:
-        await ctx.send(btm.message_member_need_name_error(member))
-        return available_existing_groups
-    while len(available_existing_groups) > 0:
-        random_lab_group = random.choice(available_existing_groups)
-        random_group = hpf.get_lab_group_number(random_lab_group.name)
-        if random_group and len(get_students_in_group(ctx, random_group)) < MAX_STUDENTS_PER_GROUP:
-            success = await aux_join_group(ctx, member, random_group)
-            if success:
-                return available_existing_groups
-        available_existing_groups.remove(random_lab_group)
-    new_group = await aux_create_group(ctx)
-    new_group_number = hpf.get_lab_group_number(new_group.name)
-    if await aux_join_group(ctx, member, new_group_number):
-        ctx.send(btm.message_default_error())
-    available_existing_groups.append(new_group)
-    return available_existing_groups
-
-
-async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]):
-    guild = ctx.guild
-    new_role = hpf.get_lab_role(guild, group)
-    new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
-    existing_lab_group = hpf.existing_member_lab_group(member)
-    if not member.nick:
-        await ctx.send(btm.message_member_need_name_error(member))
-    elif existing_lab_group:
-        await ctx.send(btm.message_member_already_in_group(get_nick(member), existing_lab_group.name))
-    elif not new_role:
-        await ctx.send(btm.message_lab_group_not_exists(new_lab_group_name))
-    elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
-        await ctx.send(btm.message_max_members_in_group_error(new_lab_group_name, MAX_STUDENTS_PER_GROUP))
-    else:
-        await member.add_roles(new_role)
-        print(f'Role "{new_role}" assigned to {member}')
-        # Move to voice channel if connected
-        voice_channel = discord.utils.get(guild.channels,
-                                          name=hpf.get_voice_channel_name(group) if type(group) == int else group)
-        if voice_channel and member.voice and member.voice.channel:
-            await member.move_to(voice_channel)
-        # Message to group text channel
-        text_channel = discord.utils.get(guild.channels,
-                                         name=hpf.get_text_channel_name(group) if type(group) == int else group)
-        if text_channel:
-            await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
-        # Message to general channel
-        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
-        if general_channel and not member_in_teaching_team(member, guild):
-            await general_channel.send(btm.message_member_joined_group(get_nick(member), new_lab_group_name))
-        return True
-    return False
-
-
-async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
-    guild = ctx.guild
-    existing_lab_role = hpf.existing_member_lab_role(member)
-    if existing_lab_role:
-        existing_lab_group = hpf.existing_member_lab_group(member)
-        # Disconnect from the group voice channel if connected to it
-        voice_channel = hpf.existing_member_lab_voice_channel(member)
-        if voice_channel and member.voice and member.voice.channel == voice_channel:
-            await member.move_to(None)
-        # Message to group text channel
-        text_channel = hpf.existing_member_lab_text_channel(member)
-        if text_channel:
-            await text_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_group.name))
-        await member.remove_roles(existing_lab_role)
-        print(f'Role "{existing_lab_role}" removed to {member}')
-        # Message to general channel
-        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
-        if general_channel and not member_in_teaching_team(member, guild):
-            await general_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_group.name))
-    elif show_not_in_group_error:
-        await ctx.send(btm.message_member_not_in_group(get_nick(member)))
 
 """
 ####################################################################

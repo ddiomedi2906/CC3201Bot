@@ -4,7 +4,8 @@ from typing import Optional, Union
 import discord
 from discord import Role
 
-from bot import PMask, STUDENT_ROLE_NAME, GENERAL_CHANNEL_NAME, aux_leave_group
+from bot import PMask, STUDENT_ROLE_NAME, GENERAL_CHANNEL_NAME
+from aux_commands.join_leave_group import aux_leave_group
 from utils import helper_functions as hpf, bot_messages as btm
 
 
