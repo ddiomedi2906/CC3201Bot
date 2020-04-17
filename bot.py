@@ -580,12 +580,13 @@ async def get_lab_list(ctx):
             await ctx.send(btm.message_no_groups())
             return
         list_string = []
+        await ctx.send("Lab list:\n")
         for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
             message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
             if message:
-                list_string.append(message)
-        if list_string:
-            await ctx.send("Lab list:\n" + "\n".join(list_string))
+                await ctx.send(message)
+        #if list_string:
+        #    await ctx.send("Lab list:\n" + "\n".join(list_string))
 
 """
 ####################################################################
