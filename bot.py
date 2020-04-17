@@ -789,6 +789,15 @@ async def raise_hand(ctx):
 ####################################################################
 """
 
+@bot.command(name='whereis', help='Find your group.')
+@commands.cooldown(rate=60, per=1)
+async def whereis_command(ctx, member: discord.Member):
+    lab_group = hpf.existing_member_lab_group(member)
+    if lab_group:
+        await ctx.send(btm.message_where_is_member(member, lab_group))
+    else:
+        await ctx.send(btm.message_member_not_in_group(get_nick(member)))
+
 
 # @bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
 async def nine_nine(ctx):

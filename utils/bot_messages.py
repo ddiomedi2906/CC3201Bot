@@ -70,7 +70,10 @@ def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has left **{group_name}!**"
 
 def message_member_not_in_group(member_name: str) -> str:
-    return f"**{member_name}** is not part group!"
+    return f"**{member_name}** is not part of any group!"
+
+def message_where_is_member(member: discord.Member, lab_group: discord.CategoryChannel) -> str:
+    return F"**{member.mention}** is on **{lab_group.name}**"
 
 """
 ####################################################################
