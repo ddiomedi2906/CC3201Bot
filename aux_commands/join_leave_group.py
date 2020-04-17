@@ -2,9 +2,10 @@ from typing import Union, List
 
 import discord
 
-from bot import STUDENT_ROLE_NAME, MAX_STUDENTS_PER_GROUP, GENERAL_CHANNEL_NAME, member_in_teaching_team
+from bot import STUDENT_ROLE_NAME, MAX_STUDENTS_PER_GROUP, GENERAL_CHANNEL_NAME
 from utils import helper_functions as hpf, bot_messages as btm
 from utils.helper_functions import get_nick
+from aux_commands.raise_hand_for_help import member_in_teaching_team
 
 """
 ####################################################################

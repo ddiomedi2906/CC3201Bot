@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from aux_commands.create_delete_group import create_new_role, update_permission, update_previous_lab_groups_permission, \
     aux_create_group, aux_delete_group
 from aux_commands.join_leave_group import get_students_in_group, aux_join_group, aux_leave_group
+from aux_commands.raise_hand_for_help import get_available_members_from_role, go_for_help, get_teaching_team_members, \
+    member_in_teaching_team
 from aux_commands.random_join_group import aux_random_join
 from utils import bot_messages as btm
 from utils import helper_functions as hpf
@@ -470,62 +472,6 @@ async def deny_all(ctx, *args):
             print(f"Updating deny permissions on {lab_group}...")
             await update_previous_lab_groups_permission(existing_lab_role, hpf.get_lab_group(ctx.guild, group), deny_mask=overwrite_mask)
         await ctx.send(btm.message_deny_all_success(p_masks, existing_lab_roles))
-
-"""
-####################################################################
-##################### CALL-FOR-HELP FUNCTIONS #######################
-####################################################################
-"""
-
-
-def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
-    if not role:
-        return []
-    online_role_members = [member for member in role.members if member.status == discord.Status.online]
-    available_members = []
-    for member in online_role_members:
-        member_roles = member.roles
-        available = True
-        for role in member_roles:
-            if re.search("member-group\s+[0-9]+", role.name):
-                available = False
-                break
-        if available:
-            available_members.append(member)
-    return available_members
-
-
-def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
-    return list(filter(lambda r: r.name in [PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME], guild.roles))
-
-
-def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
-    TT_roles = get_teaching_team_roles(guild)
-    available_team = []
-    for role in TT_roles:
-        available_team.extend(get_available_members_from_role(role))
-    return available_team
-
-def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> bool:
-    TT_roles = get_teaching_team_roles(guild)
-    for member_role in member.roles:
-        if discord.utils.get(TT_roles, name=member_role.name):
-            return True
-    return False
-
-
-async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
-    text_channel_name = hpf.get_text_channel_name(group)
-    text_channel = discord.utils.get(lab_group.channels, name=text_channel_name)
-    if text_channel:
-        await text_channel.send(btm.message_help_on_the_way(member))
-    voice_channel_name = hpf.get_voice_channel_name(group)
-    voice_channel = discord.utils.get(lab_group.channels, name=voice_channel_name)
-    if voice_channel and member.voice and member.voice.channel:
-        await member.move_to(voice_channel)
-    lab_group_role = hpf.get_lab_role(lab_group.guild, lab_group.name)
-    if lab_group_role:
-        await member.add_roles(lab_group_role)
 
 """
 ####################################################################
