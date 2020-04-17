@@ -2,7 +2,7 @@ from typing import Union, List
 
 import discord
 
-from bot import STUDENT_ROLE_NAME, MAX_STUDENTS_PER_GROUP, GENERAL_CHANNEL_NAME
+from global_variables import STUDENT_ROLE_NAME, GENERAL_CHANNEL_NAME, MAX_STUDENTS_PER_GROUP
 from utils import helper_functions as hpf, bot_messages as btm
 from utils.helper_functions import get_nick
 from aux_commands.raise_hand_for_help import member_in_teaching_team
@@ -77,3 +77,16 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
             await general_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_group.name))
     elif show_not_in_group_error:
         await ctx.send(btm.message_member_not_in_group(get_nick(member)))
+
+
+async def aux_move_to(ctx, member_mention: discord.Member, group: int):
+    member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
+    if not member:
+        await ctx.send(btm.message_member_not_exists(member_mention.nick))
+    elif len(get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
+        await ctx.send(
+            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
+                                                   MAX_STUDENTS_PER_GROUP))
+    else:
+        await aux_leave_group(ctx, member, show_not_in_group_error=False)
+        await aux_join_group(ctx, member, group)

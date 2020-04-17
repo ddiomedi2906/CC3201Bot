@@ -177,16 +177,8 @@ async def nickname_command(ctx, nickname: str):
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def move_to_command(ctx, member_mention: discord.Member, group: Union[int, str]):
-    member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
-    if not member:
-        await ctx.send(btm.message_member_not_exists(member_mention.nick))
-    elif len(jlg.get_students_in_group(ctx, group)) >= MAX_STUDENTS_PER_GROUP:
-        await ctx.send(
-            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
-                                                   MAX_STUDENTS_PER_GROUP))
-    else:
-        await jlg.aux_leave_group(ctx, member, show_not_in_group_error=False)
-        await jlg.aux_join_group(ctx, member, group)
+    async with ctx.channel.typing():
+        await jlg.aux_move_to(ctx, member_mention, group)
 
 
 @bot.command(name='join', help='Join to a group. Need to provide the group number.')
