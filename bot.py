@@ -474,26 +474,7 @@ async def deny_all(ctx, *args):
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def raise_hand(ctx):
     async with ctx.channel.typing():
-        member = ctx.author
-        existing_lab_group = hpf.existing_member_lab_group(member)
-        general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
-        if not existing_lab_group:
-            await ctx.channel.send(btm.message_member_not_in_group_for_help())
-        elif ctx.channel != hpf.existing_member_lab_text_channel(member):
-            await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
-        elif general_channel:
-            online_team = rhh.get_teaching_team_members(ctx.author.guild, TT_ROLES)
-            available_team = list(filter(lambda m: hpf.existing_member_lab_group(m) is None, online_team))
-            if available_team:
-                await ctx.channel.send(btm.message_asking_for_help())
-                await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
-            elif online_team:
-                await ctx.channel.send(btm.message_no_one_available_error())
-                await general_channel.send(btm.message_call_for_help(existing_lab_group.name, online_team))
-            else:
-                await ctx.channel.send(btm.message_no_one_online_error())
-        else:
-            await ctx.channel.send(btm.message_can_not_get_help_error())
+        await rhh.aux_raise_hand(ctx, GENERAL_CHANNEL_NAME, TT_ROLES)
 
 
 """
