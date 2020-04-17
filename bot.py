@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh
+from aux_commands.clean_group import aux_clean_group
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
@@ -271,25 +272,6 @@ async def leave_command(ctx):
 ####################################################################
 """
 
-
-async def aux_clean_group(ctx, group: Union[int, str]):
-    guild = ctx.guild
-    category_name = hpf.get_lab_group_name(group) if type(group) == int else group
-    role_name = f"member-{category_name.lower()}"
-    category = discord.utils.get(guild.categories, name=category_name)
-    existing_role = discord.utils.get(guild.roles, name=role_name)
-    if category and existing_role:
-        text_channels = category.text_channels
-        for group_member in (existing_role.members if existing_role else []):
-            await jlg.aux_leave_group(ctx, group_member, show_not_in_group_error=False)
-        for text_channel in text_channels:
-            text_channel_name = text_channel.name
-            print(f'Cleaning messages in text channels: ({text_channel_name})')
-            await text_channel.purge()
-            await text_channel.send(btm.message_welcome_group(category_name))
-        await ctx.send(btm.message_group_cleaned(category_name))
-    else:
-        await ctx.send(btm.message_group_not_exists_error(category_name))
 
 @bot.command(name='clean', help='Clean group messages. Need to provide the group number.', hidden=True)
 @commands.max_concurrency(number=1)
