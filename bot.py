@@ -16,6 +16,12 @@ from utils import bot_messages as btm
 from utils import helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 
+# TODO: refactor this file, modularize
+# TODO: when leaving a group, move back to general
+# TODO: when someome from the teaching team go for help, don't look up mention on message
+# TODO: fix list command when messages are too big
+# TODO: make-group command
+# TODO: set main
 # TODO: spanish messages
 from utils.helper_functions import get_nick
 
