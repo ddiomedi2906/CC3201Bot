@@ -210,6 +210,7 @@ async def join_command(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
         await jlg.aux_join_group(ctx, ctx.author, group)
 
+
 @bot.command(name='random-join', help='Join to a random available group.')
 @commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
@@ -230,6 +231,7 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
         print(excluded_groups)
         available_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), ctx.guild.categories))
         await rjg.aux_random_join(ctx, member, [group for group in available_lab_groups if hpf.get_lab_group_number(group.name) and hpf.get_lab_group_number(group.name) not in excluded_groups])
+
 
 @bot.command(name='random-join-all', help='Assign members with no group to a random available group.', hidden=True)
 @commands.cooldown(rate=1, per=1)
@@ -279,6 +281,7 @@ async def leave_command(ctx):
 async def clean_command(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
         await aux_clean_group(ctx, group)
+
 
 @bot.command(name='clean-all', help='Clean all groups messages.', hidden=True)
 @commands.max_concurrency(number=1)
