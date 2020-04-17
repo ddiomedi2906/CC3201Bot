@@ -2,7 +2,6 @@
 import os
 import re
 import random
-from enum import IntFlag
 from typing import Union, Optional, List
 import functools
 import operator
@@ -27,6 +26,7 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 # TODO: set main
 # TODO: spanish messages
 from utils.helper_functions import get_nick
+from utils.permission_mask import PMask
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -40,19 +40,6 @@ GENERAL_CHANNEL_NAME = os.getenv('GENERAL_CHANNEL_NAME')
 MAX_STUDENTS_PER_GROUP = 3
 
 bot = commands.Bot(command_prefix='!')
-
-
-class PMask(IntFlag):
-    STREAM = 512
-    VIEW = 1024
-    CHANGE_NICKNAME = 67108864
-    PARTIAL_TEXT = 129088
-    PARTIAL_VOICE = 49283072
-    ALL_BUT_ADMIN_AND_GUILD = 1341652291
-
-    @classmethod
-    def has_key(cls, key):
-        return key in cls._member_names_
 
 """
 ####################################################################
