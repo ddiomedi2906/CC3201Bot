@@ -66,8 +66,8 @@ async def on_ready():
     almost_all = discord.Permissions(PMask.ALL_BUT_ADMIN_AND_GUILD | PMask.STREAM)
     text_and_voice_allow = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
     TEST = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
-    for permission, value in text_and_voice_allow:
-        print(f"{value:5}\t{permission}")
+    #for permission, value in text_and_voice_allow:
+    #    print(f"{value:5}\t{permission}")
     await create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(), mentionable=True)
     await create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(), hoist=True, mentionable=True)
     await create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(), hoist=True, mentionable=True)
@@ -106,7 +106,7 @@ async def on_message(message):
 @bot.event
 async def on_reaction_add(reaction, user):
     message = reaction.message
-    if message.author == bot.user and re.search(r"calling for help", message.content):
+    if message.author == bot.user and len(message.reactions) <= 1 and re.search(r"calling for help", message.content):
         for member in message.mentions:
             if member == user and hpf.existing_member_lab_role(member) is None:
                 group = int(re.match(r"\*\*Group[\s]+(\d+).*", message.content).group(1))
@@ -115,6 +115,7 @@ async def on_reaction_add(reaction, user):
                 await go_for_help(member, lab_group, group)
                 await reaction.message.channel.send(btm.message_help_on_the_way(member))
                 return
+        await message.remove_reaction(reaction, message.author)
     if message.author == bot.user:
         return
     emoji = reaction.emoji
@@ -351,7 +352,7 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]):
     guild = ctx.guild
     new_role = hpf.get_lab_role(guild, group)
     new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
-    existing_lab_group = hpf.existing_member_lab_role(member)
+    existing_lab_group = hpf.existing_member_lab_group(member)
     if not member.nick:
         await ctx.send(btm.message_member_need_name_error(member))
     elif existing_lab_group:
@@ -409,7 +410,7 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
 ####################################################################
 """
 
-@bot.command(name='nickname', help='Set your nickname.', hidden=True)
+#@bot.command(name='nickname', help='Set your nickname.', hidden=True)
 async def nickname_command(ctx, nickname: str):
     await ctx.author.edit(nick=nickname)
 
@@ -417,7 +418,7 @@ async def nickname_command(ctx, nickname: str):
 @bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
 @commands.cooldown(rate=1, per=5)
 @commands.max_concurrency(number=1)
-@commands.has_any_role(HEAD_TA_ROLE_NAME, STUDENT_ROLE_NAME)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def move_to_command(ctx, member_mention: discord.Member, group: Union[int, str]):
     member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
     if not member:
@@ -490,7 +491,7 @@ async def random_join_all_command(ctx, *args):
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
 @commands.cooldown(rate=1, per=1)
-@commands.has_any_role(STUDENT_ROLE_NAME)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def leave_command(ctx):
     async with ctx.channel.typing():
         await aux_leave_group(ctx, ctx.author)
@@ -743,6 +744,9 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
     voice_channel = discord.utils.get(lab_group.channels, name=voice_channel_name)
     if voice_channel and member.voice and member.voice.channel:
         await member.move_to(voice_channel)
+    lab_group_role = hpf.get_lab_role(lab_group.guild, lab_group.name)
+    if lab_group_role:
+        await member.add_roles(lab_group_role)
 
 """
 ####################################################################
@@ -765,7 +769,7 @@ async def raise_hand(ctx):
             await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
         elif general_channel:
             online_team = get_teaching_team_members(ctx.author.guild)
-            available_team = list(filter(lambda m: not hpf.existing_member_lab_group(m), online_team))
+            available_team = list(filter(lambda m: hpf.existing_member_lab_group(m) is None, online_team))
             if available_team:
                 await ctx.channel.send(btm.message_asking_for_help())
                 await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
