@@ -11,11 +11,11 @@ from discord.ext import commands
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
 from aux_commands.clean_group import aux_clean_group
+from aux_commands.init_functions import init_guild
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 from utils.helper_functions import get_nick
-from utils.permission_mask import PMask
 
 # TODO: make-group command
 # TODO: set main
@@ -36,24 +36,10 @@ bot = commands.Bot(command_prefix='!')
 @bot.event
 async def on_ready():
     # guild = discord.utils.find(lambda g: g.name == GUILD, client.guilds)
-    guild = discord.utils.get(bot.guilds, id=int(GUILD_ID))
-    print(
-        f'{bot.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})'
-    )
-    members = '\n - '.join([get_nick(member) for member in guild.members])
-    print(f'Guild Members:\n - {members}')
-    all_allow = discord.Permissions.all()
-    almost_all = discord.Permissions(PMask.ALL_BUT_ADMIN_AND_GUILD | PMask.STREAM)
-    text_and_voice_allow = discord.Permissions(PMask.CHANGE_NICKNAME | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE)
-    await cdg.create_new_role(guild, PROFESSOR_ROLE_NAME, permissions=all_allow, colour=discord.Colour.blue(),
-                              hoist=True, mentionable=True)
-    await cdg.create_new_role(guild, HEAD_TA_ROLE_NAME, permissions=all_allow, colour=discord.Colour.red(),
-                              hoist=True, mentionable=True)
-    await cdg.create_new_role(guild, TA_ROLE_NAME, permissions=almost_all, colour=discord.Colour.purple(),
-                              hoist=True, mentionable=True)
-    await cdg.create_new_role(guild, STUDENT_ROLE_NAME, permissions=text_and_voice_allow, colour=discord.Colour.gold(),
-                              hoist=True, mentionable=True)
+    # guild = discord.utils.get(bot.guilds, id=int(GUILD_ID))
+    print(f'{bot.user} is connected to the following guild:\n')
+    for guild in bot.guilds:
+        await init_guild(guild)
     print("Ready to roll!")
 
 
