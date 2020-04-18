@@ -14,6 +14,7 @@ from aux_commands.init_functions import init_guild
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
+from utils.guild_config import GUILD_CONFIG
 from utils.helper_functions import get_nick
 
 # TODO: make-group command
@@ -23,6 +24,8 @@ from utils.helper_functions import get_nick
 # TODO: queue message
 # TODO: opened and closed groups
 # TODO: spanish messages
+from utils.my_converters import GuildSettings
+
 bot = commands.Bot(command_prefix='!')
 
 """
@@ -291,6 +294,36 @@ async def deny_all(ctx, *args):
 async def raise_hand(ctx):
     async with ctx.channel.typing():
         await rhh.aux_raise_hand(ctx)
+
+
+"""
+####################################################################
+######################### GUILD SETTINGS ###########################
+####################################################################
+"""
+
+
+@bot.command(name='save', help='Save guild settings.', hidden=True)
+@commands.cooldown(rate=5, per=1)
+async def save_command(ctx):
+    if GUILD_CONFIG.save(ctx.guild):
+        await ctx.send(btm.success_guild_settings_saved(ctx.guild))
+    else:
+        await btm.message_unexpected_error("save")
+
+
+@bot.command(name='set', help='Set guild\'s field.', hidden=True)
+@commands.cooldown(rate=5, per=1)
+async def set_command(ctx, *, settings: GuildSettings):
+    has_values = False
+    print(f"Setting values on {ctx.guild.name}...")
+    for key, value in settings.items:
+        if value is not None:
+            has_values = True
+            GUILD_CONFIG[ctx.guild][key] = value
+            print(f"{key}: {value}")
+    if has_values:
+        await ctx.send(btm.success_guild_settings_changed(ctx.guild))
 
 
 """

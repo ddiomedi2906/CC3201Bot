@@ -13,6 +13,12 @@ from utils.helper_functions import get_nick
 def message_default_error():
     return "Brp"
 
+def success_guild_settings_saved(guild: discord.Guild) -> str:
+    return f"**{guild.name}** settings saved successfully!"
+
+def success_guild_settings_changed(guild: discord.Guild) -> str:
+    return f"**{guild.name}** settings changed successfully!"
+
 def message_unexpected_error(command: str, *args):
     return f"An unexpected error occurs while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
 
