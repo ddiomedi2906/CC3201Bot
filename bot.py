@@ -1,9 +1,8 @@
 # bot.py
-import getopt
 import re
 import random
 import sys
-from typing import Union, List
+from typing import Union, Optional
 
 import discord
 from discord.ext import commands
@@ -74,23 +73,20 @@ async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member
             # await message.channel.send(emoji + emoji + emoji)
 
 
-#@bot.event
+@bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.MaxConcurrencyReached):
-        print(error)
         await ctx.send(f'Only {error.number} concurred invocations of this command are allowed.')
     elif isinstance(error, commands.errors.CommandOnCooldown):
-        print(error)
         await ctx.send(f'You have to wait {error.retry_after:.3}s before using this command again.')
     elif isinstance(error, commands.errors.CheckFailure):
-        print(error)
         await ctx.send(error)
     elif isinstance(error, commands.errors.CommandNotFound):
-        print(error)
         await ctx.send(error)
-    else:
-        print(error)
-        await ctx.send('You do not have the correct role for this command.')
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send(error)
+    print(error)
+    # await ctx.send('You do not have the correct role for this command.')
 
 """
 ####################################################################
@@ -306,12 +302,15 @@ async def raise_hand(ctx):
 
 @bot.command(name='whereis', help='Find your group.')
 @commands.cooldown(rate=60, per=1)
-async def where_is_command(ctx, member: discord.Member):
-    lab_group = hpf.existing_member_lab_group(member)
-    if lab_group:
-        await ctx.send(btm.message_where_is_member(member, lab_group))
-    else:
-        await ctx.send(btm.message_member_not_in_group(get_nick(member)))
+async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
+    if name_not_valid:
+        await ctx.send(f'I could not find member ({name_not_valid})...')
+    for member in members:
+        lab_group = hpf.existing_member_lab_group(member)
+        if lab_group:
+            await ctx.send(btm.message_where_is_member(member, lab_group))
+        else:
+            await ctx.send(btm.message_member_not_in_group(get_nick(member)))
 
 
 @bot.command(name='roll_dice', help='Simulates rolling dice.')

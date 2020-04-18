@@ -14,7 +14,7 @@ def message_default_error():
     return "Brp"
 
 def message_unexpected_error(command: str, *args):
-    return f"An unexpected error while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
+    return f"An unexpected error occurs while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
 
 def message_group_not_exists_error(group: str) -> str:
     return f"**{group}** does not exist!"
