@@ -15,7 +15,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 from utils.helper_functions import get_nick
 from utils.permission_mask import PMask
 
-# TODO: when leaving a group, move back to general
 # TODO: when someome from the teaching team go for help, don't look up mention on message
 # TODO: make-group command
 # TODO: set main
