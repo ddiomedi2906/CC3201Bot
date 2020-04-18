@@ -19,7 +19,6 @@ from utils.helper_functions import get_nick
 
 # TODO: make-group command
 # TODO: set main
-# TODO: set bot env variables like MAX_GROUP_SIZE or NICKNAME_REQUIREMENT
 # TODO: broadcast
 # TODO: queue message
 # TODO: opened and closed groups
