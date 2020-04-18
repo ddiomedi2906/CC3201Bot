@@ -17,7 +17,6 @@ from utils.permission_mask import PMask
 
 # TODO: when leaving a group, move back to general
 # TODO: when someome from the teaching team go for help, don't look up mention on message
-# TODO: fix list command when messages are too big
 # TODO: make-group command
 # TODO: set main
 # TODO: spanish messages
