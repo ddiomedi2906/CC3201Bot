@@ -17,6 +17,10 @@ from utils.permission_mask import PMask
 
 # TODO: make-group command
 # TODO: set main
+# TODO: set bot env variables like MAX_GROUP_SIZE or NICKNAME_REQUIREMENT
+# TODO: broadcast
+# TODO: queue message
+# TODO: opened and closed groups
 # TODO: spanish messages
 bot = commands.Bot(command_prefix='!')
 
@@ -138,9 +142,9 @@ async def delete_group(ctx, group: Union[int, str]):
 async def delete_all_groups(ctx):
     async with ctx.channel.typing():
         guild = ctx.guild
-        for category in sorted(guild.categories, key=lambda c: c.name, reverse=True):
-            if re.search(r"Group[\s]+[0-9]+", category.name):
-                await cdg.aux_delete_group(ctx, category.name)
+        existing_lab_groups = hpf.all_existing_lab_groups(guild)
+        for category in sorted(existing_lab_groups, key=lambda c: c.name, reverse=True):
+            await cdg.aux_delete_group(ctx, category.name)
 
 """
 ####################################################################
