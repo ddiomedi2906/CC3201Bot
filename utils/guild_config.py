@@ -55,7 +55,19 @@ class GuildConfig:
     def __contains__(self, guild: discord.Guild) -> bool:
         return guild.id in self.config
 
-    def save(self):
+    def save(self, guild) -> bool:
+        try:
+            with open(self.config_json) as inJsonFile:
+                data = json.load(inJsonFile)
+            for key, value in self.config:
+                data[guild.id][key] = value
+            with open(self.config_json, "w") as outJsonFile:
+                json.dump(data, outJsonFile, indent=2)
+            return True
+        except IOError:
+            return False
+
+    def save_all(self):
         with open(self.config_json, "w") as outJsonFile:
             json.dump(self.config, outJsonFile, indent=2)
 
