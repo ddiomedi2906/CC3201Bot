@@ -15,7 +15,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 from utils.helper_functions import get_nick
 from utils.permission_mask import PMask
 
-# TODO: when someome from the teaching team go for help, don't look up mention on message
 # TODO: make-group command
 # TODO: set main
 # TODO: spanish messages
@@ -61,29 +60,29 @@ async def on_member_join(member):
     
 
 @bot.event
-async def on_reaction_add(reaction, user):
+async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member, discord.User]):
     message = reaction.message
     if message.author == bot.user and len(message.reactions) <= 1 and re.search(r"calling for help", message.content):
-        for member in message.mentions:
-            if member == user and hpf.existing_member_lab_role(member) is None:
-                group = int(re.match(r"\*\*Group[\s]+(\d+).*", message.content).group(1))
-                group_name = hpf.get_lab_group_name(group)
-                lab_group = discord.utils.get(user.guild.channels, name=group_name)
-                await rhh.go_for_help(member, lab_group, group)
-                await reaction.message.channel.send(btm.message_help_on_the_way(member))
-                return
-        await message.remove_reaction(reaction, message.author)
-    if message.author == bot.user:
-        return
-    emoji = reaction.emoji
-    print(emoji, get_unicode_from_emoji(emoji))
-    if same_emoji(emoji, 'slight_smile'):
-        await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
-        await message.channel.send(emoji + emoji + emoji)
-        # await message.channel.send(emoji + emoji + emoji)
+        if rhh.member_in_teaching_team(user, message.guild) and hpf.existing_member_lab_role(user) is None:
+            group = hpf.get_lab_group_number(message.content)
+            group_name = hpf.get_lab_group_name(group)
+            lab_group = discord.utils.get(user.guild.channels, name=group_name)
+            await rhh.go_for_help(user, lab_group, group)
+            await reaction.message.channel.send(btm.message_help_on_the_way(user))
+        else:
+            await message.remove_reaction(reaction, message.author)
+    elif message.author == bot.user:
+        pass
+    else:
+        emoji = reaction.emoji
+        print(emoji, get_unicode_from_emoji(emoji))
+        if same_emoji(emoji, 'slight_smile'):
+            await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
+            await message.channel.send(emoji + emoji + emoji)
+            # await message.channel.send(emoji + emoji + emoji)
 
 
-@bot.event
+#@bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.MaxConcurrencyReached):
         print(error)

@@ -14,14 +14,14 @@ from utils import helper_functions as hpf, bot_messages as btm
 
 
 def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
-    return list(filter(lambda r: r.name in TT_ROLES, guild.roles))
+    return [role for role in guild.roles if role.name in TT_ROLES]
 
 
 def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
     tt_roles = get_teaching_team_roles(guild)
     available_team = []
     for role in tt_roles:
-        available_team.extend(get_available_members_from_role(role))
+        available_team.extend(get_online_members_from_role(role))
     return available_team
 
 
@@ -33,21 +33,8 @@ def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> boo
     return False
 
 
-def get_available_members_from_role(role: discord.Role) -> List[discord.Member]:
-    if not role:
-        return []
-    online_role_members = [member for member in role.members if member.status == discord.Status.online]
-    available_members = []
-    for member in online_role_members:
-        member_roles = member.roles
-        available = True
-        for role in member_roles:
-            if re.search("member-group\s+[0-9]+", role.name):
-                available = False
-                break
-        if available:
-            available_members.append(member)
-    return available_members
+def get_online_members_from_role(role: discord.Role) -> List[discord.Member]:
+    return [member for member in role.members if member.status == discord.Status.online]
 
 
 async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
@@ -74,7 +61,7 @@ async def aux_raise_hand(ctx):
         await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
     elif general_channel:
         online_team = get_teaching_team_members(ctx.author.guild)
-        available_team = list(filter(lambda m: hpf.existing_member_lab_group(m) is None, online_team))
+        available_team = [member for member in online_team if not hpf.existing_member_lab_group(member)]
         if available_team:
             await ctx.channel.send(btm.message_asking_for_help())
             await general_channel.send(btm.message_call_for_help(existing_lab_group.name, available_team))
