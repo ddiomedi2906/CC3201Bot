@@ -2,7 +2,7 @@ from typing import Union, List
 
 import discord
 
-from global_variables import STUDENT_ROLE_NAME, GENERAL_CHANNEL_NAME, MAX_STUDENTS_PER_GROUP
+from global_variables import STUDENT_ROLE_NAME, GENERAL_TEXT_CHANNEL_NAME, MAX_STUDENTS_PER_GROUP
 from utils import helper_functions as hpf, bot_messages as btm
 from utils.helper_functions import get_nick
 from aux_commands.raise_hand_for_help import member_in_teaching_team
@@ -49,7 +49,7 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]):
         if text_channel:
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
         # Message to general channel
-        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+        general_channel = discord.utils.get(guild.channels, name=GENERAL_TEXT_CHANNEL_NAME)
         if general_channel and not member_in_teaching_team(member, guild):
             await general_channel.send(btm.message_member_joined_group(get_nick(member), new_lab_group_name))
         return True
@@ -72,7 +72,7 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         await member.remove_roles(existing_lab_role)
         print(f'Role "{existing_lab_role}" removed to {member}')
         # Message to general channel
-        general_channel = discord.utils.get(guild.channels, name=GENERAL_CHANNEL_NAME)
+        general_channel = discord.utils.get(guild.channels, name=GENERAL_TEXT_CHANNEL_NAME)
         if general_channel and not member_in_teaching_team(member, guild):
             await general_channel.send(btm.message_member_left_group(get_nick(member), existing_lab_group.name))
     elif show_not_in_group_error:

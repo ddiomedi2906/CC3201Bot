@@ -3,7 +3,7 @@ from typing import List
 
 import discord
 
-from global_variables import TT_ROLES, GENERAL_CHANNEL_NAME
+from global_variables import TT_ROLES, GENERAL_TEXT_CHANNEL_NAME
 from utils import helper_functions as hpf, bot_messages as btm
 
 """
@@ -67,7 +67,7 @@ async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel
 async def aux_raise_hand(ctx):
     member = ctx.author
     existing_lab_group = hpf.existing_member_lab_group(member)
-    general_channel = discord.utils.get(member.guild.channels, name=GENERAL_CHANNEL_NAME)
+    general_channel = discord.utils.get(member.guild.channels, name=GENERAL_TEXT_CHANNEL_NAME)
     if not existing_lab_group:
         await ctx.channel.send(btm.message_member_not_in_group_for_help())
     elif ctx.channel != hpf.existing_member_lab_text_channel(member):
