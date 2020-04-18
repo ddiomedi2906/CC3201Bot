@@ -1,6 +1,8 @@
 # bot.py
+import getopt
 import re
 import random
+import sys
 from typing import Union, List
 
 import discord
@@ -343,11 +345,29 @@ async def salute(ctx):
     # await ctx.author.create_dm()
     # await ctx.author.dm_channel.send(f'Hi {ctx.author.name}, welcome to my Discord server!')
 
-
 """
 ####################################################################
 ############################ RUN BOT ###############################
 ####################################################################
 """
 
-bot.run(TOKEN)
+def main(argv):
+    """
+    try:
+        opts, args = getopt.getopt(argv, "hi:o:", ["envpath=", "lang="])
+    except getopt.GetoptError:
+        print('test.py -i <inputfile> -o <outputfile>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('test.py -i <inputfile> -o <outputfile>')
+            sys.exit()
+        elif opt in ("-i", "--ifile"):
+            inputfile = arg
+        elif opt in ("-o", "--ofile"):
+            outputfile = arg
+    """
+    bot.run(TOKEN)
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
