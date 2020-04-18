@@ -10,10 +10,12 @@ import discord
 ####################################################################
 """
 
+GROUP_NAME_PATTERN = re.compile("Group[\s]+([0-9]+)")
+ROLE_NAME_PATTERN = re.compile("member-group\s+([0-9]+)")
 
 def get_lab_group_number(group_name: str) -> Optional[int]:
-    if re.search("Group[\s]+([0-9]+)", group_name):
-        return int(re.search("Group[\s]+([0-9]+)", group_name).group(1))
+    if GROUP_NAME_PATTERN.search(group_name):
+        return int(GROUP_NAME_PATTERN.search(group_name).group(1))
     return None
 
 
@@ -39,29 +41,29 @@ def get_lab_group(guild: discord.Guild, group: Union[int, str]) -> Optional[disc
 
 
 def get_lab_role(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.Role]:
-    if type(group) == str and re.search("Group[\s]+([0-9]+)", group):
-        group = int(re.search("Group[\s]+([0-9]+)", group).group(1))
+    if type(group) == str and GROUP_NAME_PATTERN.search(group):
+        group = int(GROUP_NAME_PATTERN.search(group).group(1))
     return discord.utils.get(guild.roles, name=get_role_name(group))
 
 
 def get_lab_text_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.TextChannel]:
-    if type(group) == str and re.search("Group[\s]+([0-9]+)", group):
-        group = int(re.search("Group[\s]+([0-9]+)", group).group(1))
+    if type(group) == str and GROUP_NAME_PATTERN.search(group):
+        group = int(GROUP_NAME_PATTERN.search(group).group(1))
     return discord.utils.get(guild.channels, name=get_text_channel_name(group))
 
 
 def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.VoiceChannel]:
-    if type(group) == str and re.search("Group[\s]+([0-9]+)", group):
-        group = int(re.search("Group[\s]+([0-9]+)", group).group(1))
+    if type(group) == str and GROUP_NAME_PATTERN.search(group):
+        group = int(GROUP_NAME_PATTERN.search(group).group(1))
     return discord.utils.get(guild.channels, name=get_voice_channel_name(group))
 
 
 def all_existing_lab_roles(guild: discord.Guild) -> List[discord.Role]:
-    return list(filter(lambda r: re.search("member-group\s+[0-9]+", r.name), guild.roles))
+    return list(filter(lambda r: ROLE_NAME_PATTERN.search(r.name), guild.roles))
 
 
 def all_existing_lab_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
-    return list(filter(lambda r: re.search("Group\s+[0-9]+", r.name), guild.categories))
+    return list(filter(lambda r: GROUP_NAME_PATTERN.search(r.name), guild.categories))
 
 
 def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
@@ -69,8 +71,7 @@ def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
 
 
 def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
-    return int(re.search("member-group\s+([0-9]+)", role.name).group(1)) \
-        if re.search("member-group\s+[0-9]+", role.name) else None
+    return int(ROLE_NAME_PATTERN.search(role.name).group(1)) if ROLE_NAME_PATTERN.search(role.name) else None
 
 
 def existing_group_number(member: discord.Member) -> Optional[int]:
@@ -85,7 +86,7 @@ def existing_group_number(member: discord.Member) -> Optional[int]:
 def existing_member_lab_role(member: discord.Member) -> Optional[discord.Role]:
     member_roles = member.roles
     for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
+        if ROLE_NAME_PATTERN.search(role.name):
             return role
     return None
 
@@ -93,8 +94,8 @@ def existing_member_lab_role(member: discord.Member) -> Optional[discord.Role]:
 def existing_member_lab_group(member: discord.Member) -> Optional[discord.CategoryChannel]:
     member_roles = member.roles
     for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+        if ROLE_NAME_PATTERN.search(role.name):
+            num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
             return discord.utils.get(member.guild.categories, name=get_lab_group_name(num))
     return None
 
@@ -102,8 +103,8 @@ def existing_member_lab_group(member: discord.Member) -> Optional[discord.Catego
 def existing_member_lab_text_channel(member: discord.Member) -> Optional[discord.TextChannel]:
     member_roles = member.roles
     for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+        if ROLE_NAME_PATTERN.search(role.name):
+            num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
             return discord.utils.get(member.guild.channels, name=get_text_channel_name(num))
     return None
 
@@ -111,8 +112,8 @@ def existing_member_lab_text_channel(member: discord.Member) -> Optional[discord
 def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discord.VoiceChannel]:
     member_roles = member.roles
     for role in member_roles:
-        if re.search("member-group\s+[0-9]+", role.name):
-            num = int(re.sub("member-group\s+([0-9]+)", r"\1", role.name))
+        if ROLE_NAME_PATTERN.search(role.name):
+            num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
             return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
     return None
 
