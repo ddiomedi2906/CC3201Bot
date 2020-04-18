@@ -4,7 +4,7 @@ from typing import Optional, Union
 import discord
 from discord import Role
 
-from global_variables import STUDENT_ROLE_NAME, GENERAL_TEXT_CHANNEL_NAME
+from utils.guild_config import GUILD_CONFIG
 from utils.permission_mask import PMask
 from aux_commands.join_leave_group import aux_leave_group
 from utils import helper_functions as hpf, bot_messages as btm
@@ -82,7 +82,7 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
             can_not_view_channel = discord.Permissions(PMask.VIEW)
             overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
                           for role in hpf.all_existing_lab_roles(guild)}
-            student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
+            student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])
             if student_role:
                 overwrites[student_role] = discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
@@ -96,7 +96,7 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
             text_channel = await new_category.create_text_channel(text_channel_name)
             await new_category.create_voice_channel(voice_channel_name)
             # Success message
-            general_channel = discord.utils.get(guild.channels, name=GENERAL_TEXT_CHANNEL_NAME)
+            general_channel = discord.utils.get(guild.channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
             if general_channel:
                 await general_channel.send(btm.message_group_created(new_category_name, next_num))
             await text_channel.send(btm.message_welcome_group(new_category_name))
@@ -129,6 +129,6 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
         print(f'Deleting role: {role.name}')
         await role.delete()
     if success and show_bot_message:
-        general_channel = discord.utils.get(guild.channels, name=GENERAL_TEXT_CHANNEL_NAME)
+        general_channel = discord.utils.get(guild.channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
         if general_channel:
             await general_channel.send(btm.message_group_deleted(category.name))

@@ -6,8 +6,8 @@ import discord
 from aux_commands.create_delete_group import aux_create_group
 from aux_commands.join_leave_group import get_students_in_group, aux_join_group
 from aux_commands.raise_hand_for_help import member_in_teaching_team
-from global_variables import MAX_STUDENTS_PER_GROUP
 from utils import bot_messages as btm, helper_functions as hpf
+from utils.guild_config import GUILD_CONFIG
 
 """
 ####################################################################
@@ -20,10 +20,11 @@ async def random_assignment(ctx, member: discord.Member, available_existing_grou
     if not member.nick:
         await ctx.send(btm.message_member_need_name_error(member))
         return available_existing_groups
+    MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
     while len(available_existing_groups) > 0:
         random_lab_group = random.choice(available_existing_groups)
         random_group = hpf.get_lab_group_number(random_lab_group.name)
-        if random_group and len(get_students_in_group(ctx, random_group)) < MAX_STUDENTS_PER_GROUP:
+        if random_group and len(get_students_in_group(ctx, random_group)) < MAX_GROUP_SIZE:
             success = await aux_join_group(ctx, member, random_group)
             if success:
                 return available_existing_groups
