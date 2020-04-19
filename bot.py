@@ -353,6 +353,21 @@ async def set_command(ctx, *, settings: GuildSettings):
 """
 
 
+@bot.command(name='broadcast', help='Broadcast a message on all groups.', hidden=True)
+@commands.cooldown(rate=60, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def broadcast_command(ctx, *, message: str):
+    async with ctx.channel.typing():
+        guild = ctx.guild
+        general_text_channel = discord.utils.get(guild.text_channels,
+                                                 name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
+        existing_lab_groups = hpf.all_existing_lab_groups(guild)
+        await general_text_channel.send(btm.broadcast_message_from(ctx.author, message))
+        for group in existing_lab_groups:
+            text_channel = hpf.get_lab_text_channel(guild, group.name)
+            await text_channel.send(btm.broadcast_message_from(ctx.author, message))
+
+
 @bot.command(name='whereis', help='Find your group.')
 @commands.cooldown(rate=60, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)

@@ -82,7 +82,11 @@ def message_member_not_in_group(member_name: str) -> str:
     return f"**{member_name}** is not part of any group!"
 
 def message_where_is_member(member: discord.Member, lab_group: discord.CategoryChannel) -> str:
-    return F"**{member.mention}** is on **{lab_group.name}**"
+    return f"**{member.mention}** is on **{lab_group.name}**"
+
+def broadcast_message_from(member: discord.Member, message: str) -> str:
+    return f"**Broadcast message from {get_nick(member)}!**\n" \
+           f"> {message}"
 
 """
 ####################################################################
