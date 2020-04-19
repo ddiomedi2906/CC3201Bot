@@ -3,6 +3,7 @@ from typing import Union, Optional, List
 
 import discord
 
+from utils.guild_config import GUILD_CONFIG
 
 """
 ####################################################################
@@ -33,6 +34,10 @@ def get_text_channel_name(number: int):
 
 def get_voice_channel_name(number: int):
     return f"voice-channel {number}"
+
+
+def get_nick(member: discord.Member) -> str:
+    return member.nick if member.nick else member.name
 
 
 def get_lab_group(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.CategoryChannel]:
@@ -68,6 +73,15 @@ def all_existing_lab_groups(guild: discord.Guild) -> List[discord.CategoryChanne
 
 def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
     return [member for member in guild.members if existing_member_lab_role(member) is None]
+
+
+def all_members_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
+    guild = ctx.guild
+    existing_role = get_lab_role(guild, group)
+    student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])
+    if not existing_role:
+        return []
+    return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
 
 
 def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
@@ -116,7 +130,3 @@ def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discor
             num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
             return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
     return None
-
-
-def get_nick(member: discord.Member) -> str:
-    return member.nick if member.nick else member.name
