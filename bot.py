@@ -87,6 +87,8 @@ async def on_command_error(ctx, error):
         await ctx.send(error)
     elif isinstance(error, commands.BadArgument):
         await ctx.send(error)
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(error)
     print(error)
     # await ctx.send('You do not have the correct role for this command.')
 
@@ -314,15 +316,20 @@ async def save_command(ctx):
 @bot.command(name='set', help='Set guild\'s field.', hidden=True)
 @commands.cooldown(rate=5, per=1)
 async def set_command(ctx, *, settings: GuildSettings):
+    guild = ctx.guild
     has_values = False
-    print(f"Setting values on {ctx.guild.name}...")
+    if guild not in GUILD_CONFIG:
+        await ctx.send(btm.message_default_error())
+        print(f"Guild {guild.name} is not included on config.json!")
+        return
+    print(f"Setting values on guild {guild.name}...")
     for key, value in settings.items:
         if value is not None:
             has_values = True
-            GUILD_CONFIG[ctx.guild][key] = value
+            GUILD_CONFIG[guild][key] = value
             print(f"{key}: {value}")
     if has_values:
-        await ctx.send(btm.success_guild_settings_changed(ctx.guild))
+        await ctx.send(btm.success_guild_settings_changed(guild))
 
 
 """
@@ -336,7 +343,7 @@ async def set_command(ctx, *, settings: GuildSettings):
 @commands.cooldown(rate=60, per=1)
 async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
     if name_not_valid:
-        await ctx.send(f'I could not find member ({name_not_valid})...')
+        await ctx.send(btm.message_member_not_exists(name_not_valid))
     for member in members:
         lab_group = hpf.existing_member_lab_group(member)
         if lab_group:
