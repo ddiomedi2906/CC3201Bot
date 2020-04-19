@@ -54,13 +54,13 @@ def get_lab_role(guild: discord.Guild, group: Union[int, str]) -> Optional[disco
 def get_lab_text_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.TextChannel]:
     if type(group) == str and GROUP_NAME_PATTERN.search(group):
         group = int(GROUP_NAME_PATTERN.search(group).group(1))
-    return discord.utils.get(guild.channels, name=get_text_channel_name(group))
+    return discord.utils.get(guild.text_channels, name=get_text_channel_name(group))
 
 
 def get_lab_voice_channel(guild: discord.Guild, group: Union[int, str]) -> Optional[discord.VoiceChannel]:
     if type(group) == str and GROUP_NAME_PATTERN.search(group):
         group = int(GROUP_NAME_PATTERN.search(group).group(1))
-    return discord.utils.get(guild.channels, name=get_voice_channel_name(group))
+    return discord.utils.get(guild.voice_channels, name=get_voice_channel_name(group))
 
 
 def all_existing_lab_roles(guild: discord.Guild) -> List[discord.Role]:
