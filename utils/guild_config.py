@@ -1,4 +1,5 @@
 import json
+from asyncio import Lock
 from collections.abc import MutableMapping
 import os
 from typing import List
@@ -36,6 +37,8 @@ class GuildDict(MutableMapping):
     def __keytransform__(self, key):
         return key
 
+config_lock = Lock()
+
 class GuildConfig:
 
     def __init__(self, config_json: str):
@@ -55,21 +58,23 @@ class GuildConfig:
     def __contains__(self, guild: discord.Guild) -> bool:
         return guild.id in self.config
 
-    def save(self, guild) -> bool:
-        try:
-            with open(self.config_json) as inJsonFile:
-                data = json.load(inJsonFile)
-            for key, value in self.config[guild.id].items():
-                data[str(guild.id)][key] = value
-            with open(self.config_json, "w") as outJsonFile:
-                json.dump(data, outJsonFile, indent=2)
-            return True
-        except IOError:
-            return False
+    async def save(self, guild) -> bool:
+        async with config_lock:
+            try:
+                with open(self.config_json) as inJsonFile:
+                    data = json.load(inJsonFile)
+                for key, value in self.config[guild.id].items():
+                    data[str(guild.id)][key] = value
+                with open(self.config_json, "w") as outJsonFile:
+                    json.dump(data, outJsonFile, indent=2)
+                return True
+            except IOError:
+                return False
 
-    def save_all(self):
-        with open(self.config_json, "w") as outJsonFile:
-            json.dump(self.config, outJsonFile, indent=2)
+    async def save_all(self):
+        async with config_lock:
+            with open(self.config_json, "w") as outJsonFile:
+                json.dump(self.config, outJsonFile, indent=2)
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))

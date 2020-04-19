@@ -318,7 +318,7 @@ async def raise_hand(ctx):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def save_command(ctx):
     async with ctx.channel.typing():
-        if GUILD_CONFIG.save(ctx.guild):
+        if await GUILD_CONFIG.save(ctx.guild):
             await ctx.send(btm.success_guild_settings_saved(ctx.guild))
         else:
             await btm.message_unexpected_error("save")
