@@ -1,12 +1,14 @@
+import random
 import re
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import discord
 from discord import Role
 
 from utils.guild_config import GUILD_CONFIG
 from utils.permission_mask import PMask
-from aux_commands.join_leave_group import aux_leave_group
+from aux_commands.join_leave_group import aux_leave_group, aux_join_group
+from aux_commands.raise_hand_for_help import member_in_teaching_team
 from utils import helper_functions as hpf, bot_messages as btm
 
 
@@ -133,3 +135,33 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
         general_channel = discord.utils.get(guild.channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
         if general_channel:
             await general_channel.send(btm.message_group_deleted(category.name))
+
+
+async def aux_make_group(ctx, members: List[discord.Member]) -> bool:
+    guild = ctx.guild
+    if not member_in_teaching_team(ctx.author, guild) and ctx.author not in members:
+        members.append(ctx.author)
+    members = set(members)
+    # Check if there are not more members than allowed
+    if len(members) > GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]:
+        await ctx.send(btm.message_too_many_members_error(GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]))
+        return False
+    members_with_groups = False
+    # Check if any member is already in any group
+    for member in members:
+        existing_lab_group = hpf.existing_member_lab_group(member)
+        if existing_lab_group:
+            members_with_groups = True
+            await ctx.send(btm.message_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
+    if members_with_groups:
+        return False
+    empty_groups = hpf.all_empty_groups(guild)
+    if not empty_groups:
+        extra_group = await aux_create_group(ctx)
+        empty_groups.append(extra_group)
+    new_group = random.choice(empty_groups)
+    print(f'Moving members {" ".join([hpf.get_nick(m) for m in members])} to {new_group.name}')
+    success = True
+    for member in members:
+        success = await aux_join_group(ctx, member, new_group.name)
+    return success

@@ -70,7 +70,10 @@ def message_member_already_in_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** is already part of **{group_name}!**"
 
 def message_max_members_in_group_error(group_name: str, max_size: int) -> str:
-    return f"**{group_name}!** has reached its maximum limit! (**{max_size}**)"
+    return f"**{group_name}** has reached its maximum limit! (**{max_size}**)"
+
+def message_too_many_members_error(max_size: int) -> str:
+    return f"Groups can have only **{max_size}** student{'s' if max_size > 1 else ''}!"
 
 def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has left **{group_name}!**"

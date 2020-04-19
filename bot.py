@@ -134,6 +134,17 @@ async def delete_all_groups(ctx):
         for category in sorted(existing_lab_groups, key=lambda c: c.name, reverse=True):
             await cdg.aux_delete_group(ctx, category.name)
 
+
+@bot.command(name='group', aliases=["make-group"], help='Make a group with the given members.', hidden=True)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def make_group_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
+    async with ctx.channel.typing():
+        if name_not_valid:
+            await ctx.send(btm.message_member_not_exists(name_not_valid))
+        else:
+            await cdg.aux_make_group(ctx, members)
+
 """
 ####################################################################
 ##################### JOIN/LEAVE GROUP COMMANDS ####################
