@@ -47,15 +47,16 @@ async def update_previous_lab_groups_permission(
         deny_mask: Optional[int] = None
 ) -> None:
     guild = category.guild
-    existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name) and c != category, guild.categories))
+    existing_lab_groups = hpf.all_existing_lab_groups(guild)
     for lab_group in existing_lab_groups:
-        await update_permission(role, lab_group, allow_mask, deny_mask)
+        if lab_group != category:
+            await update_permission(role, lab_group, allow_mask, deny_mask)
 
 
 async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
     # Get existing lab groups
     guild = ctx.guild
-    existing_lab_groups = list(filter(lambda c: re.search(r"Group[\s]+[0-9]+", c.name), guild.categories))
+    existing_lab_groups = hpf.all_existing_lab_groups(guild)
     # Get new group number (assumes a previous lab group could have been deleted)
     next_num = 1
     for idx, category in enumerate(sorted(existing_lab_groups, key=lambda c: c.name), 2):
@@ -78,7 +79,8 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
             new_role = await create_new_role(guild, new_role_name, mentionable=True)
             # Set lab group permissions
             default = discord.Permissions()
-            allow_text_voice_stream = discord.Permissions(PMask.VIEW | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE | PMask.STREAM)
+            allow_text_voice_stream = discord.Permissions(
+                PMask.VIEW | PMask.PARTIAL_TEXT | PMask.PARTIAL_VOICE | PMask.STREAM)
             can_not_view_channel = discord.Permissions(PMask.VIEW)
             overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
                           for role in hpf.all_existing_lab_roles(guild)}
@@ -88,7 +90,7 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
             overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
             # Create new lab group
             print(f'Creating a new category: {new_category_name}')
-            new_category = await guild.create_category_channel(new_category_name , overwrites=overwrites)
+            new_category = await guild.create_category_channel(new_category_name, overwrites=overwrites)
             # Deny access to the lab groups created before
             await update_previous_lab_groups_permission(new_role, new_category, deny_mask=PMask.VIEW)
             # Create new text and voice channels
@@ -102,7 +104,6 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
             await text_channel.send(btm.message_welcome_group(new_category_name))
             return new_category
         except Exception as e:
-            print(e)
             await ctx.send(btm.message_unexpected_error("create-group"))
             await aux_delete_group(ctx, next_num, show_bot_message=False)
             raise e
