@@ -136,7 +136,7 @@ async def delete_all_groups(ctx):
 
 @bot.command(name='group', aliases=["make-group"], help='Make a group with the given members.', hidden=True)
 @commands.max_concurrency(number=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def make_group_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
     async with ctx.channel.typing():
         if name_not_valid:
@@ -316,30 +316,34 @@ async def raise_hand(ctx):
 
 @bot.command(name='save', help='Save guild settings.', hidden=True)
 @commands.cooldown(rate=5, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def save_command(ctx):
-    if GUILD_CONFIG.save(ctx.guild):
-        await ctx.send(btm.success_guild_settings_saved(ctx.guild))
-    else:
-        await btm.message_unexpected_error("save")
+    async with ctx.channel.typing():
+        if GUILD_CONFIG.save(ctx.guild):
+            await ctx.send(btm.success_guild_settings_saved(ctx.guild))
+        else:
+            await btm.message_unexpected_error("save")
 
 
 @bot.command(name='set', help='Set guild\'s field.', hidden=True)
 @commands.cooldown(rate=5, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def set_command(ctx, *, settings: GuildSettings):
-    guild = ctx.guild
-    has_values = False
-    if guild not in GUILD_CONFIG:
-        await ctx.send(btm.message_default_error())
-        print(f"Guild {guild.name} is not included on config.json!")
-        return
-    print(f"Setting values on guild {guild.name}...")
-    for key, value in settings.items:
-        if value is not None:
-            has_values = True
-            GUILD_CONFIG[guild][key] = value
-            print(f"{key}: {value}")
-    if has_values:
-        await ctx.send(btm.success_guild_settings_changed(guild))
+    async with ctx.channel.typing():
+        guild = ctx.guild
+        has_values = False
+        if guild not in GUILD_CONFIG:
+            await ctx.send(btm.message_default_error())
+            print(f"Guild {guild.name} is not included on config.json!")
+            return
+        print(f"Setting values on guild {guild.name}...")
+        for key, value in settings.items:
+            if value is not None:
+                has_values = True
+                GUILD_CONFIG[guild][key] = value
+                print(f"{key}: {value}")
+        if has_values:
+            await ctx.send(btm.success_guild_settings_changed(guild))
 
 
 """
@@ -351,15 +355,17 @@ async def set_command(ctx, *, settings: GuildSettings):
 
 @bot.command(name='whereis', help='Find your group.')
 @commands.cooldown(rate=60, per=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
-    if name_not_valid:
-        await ctx.send(btm.message_member_not_exists(name_not_valid))
-    for member in members:
-        lab_group = hpf.existing_member_lab_group(member)
-        if lab_group:
-            await ctx.send(btm.message_where_is_member(member, lab_group))
-        else:
-            await ctx.send(btm.message_member_not_in_group(get_nick(member)))
+    async with ctx.channel.typing():
+        if name_not_valid:
+            await ctx.send(btm.message_member_not_exists(name_not_valid))
+        for member in members:
+            lab_group = hpf.existing_member_lab_group(member)
+            if lab_group:
+                await ctx.send(btm.message_where_is_member(member, lab_group))
+            else:
+                await ctx.send(btm.message_member_not_in_group(get_nick(member)))
 
 
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
