@@ -22,13 +22,13 @@ def get_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
 
 
-async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]):
+async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) -> bool:
     guild = ctx.guild
     new_role = hpf.get_lab_role(guild, group)
     new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
     existing_lab_group = hpf.existing_member_lab_group(member)
     MAX_GROUP_SIZE = GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]
-    if not member.nick:
+    if GUILD_CONFIG[guild]["REQUIRE_NICKNAME"] and not member.nick:
         await ctx.send(btm.message_member_need_name_error(member))
     elif existing_lab_group:
         await ctx.send(btm.message_member_already_in_group(get_nick(member), existing_lab_group.name))

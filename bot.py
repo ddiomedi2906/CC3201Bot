@@ -18,10 +18,10 @@ from utils.guild_config import GUILD_CONFIG
 from utils.helper_functions import get_nick
 
 # TODO: make-group command
-# TODO: set main
 # TODO: broadcast
 # TODO: queue message
 # TODO: opened and closed groups
+# TODO: set main
 # TODO: spanish messages
 from utils.my_converters import GuildSettings
 

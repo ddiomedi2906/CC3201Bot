@@ -33,7 +33,7 @@ class GuildSettings:
                 raise commands.BadArgument(usage)
             elif opt in ("-n", "--require_nickname"):
                 nickname = convert_bool(arg)
-                if not nickname:
+                if nickname is None:
                     raise commands.BadArgument(usage)
             elif opt in ("-g", "--groups_size"):
                 try:
