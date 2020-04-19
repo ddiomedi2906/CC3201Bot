@@ -17,7 +17,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 from utils.guild_config import GUILD_CONFIG
 from utils.helper_functions import get_nick
 
-# TODO: make-group command
 # TODO: broadcast
 # TODO: queue message
 # TODO: opened and closed groups
