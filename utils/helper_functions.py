@@ -75,7 +75,7 @@ def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
     return [member for member in guild.members if existing_member_lab_role(member) is None]
 
 
-def all_members_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
+def all_students_in_groups(ctx, group: Union[int, str]) -> List[discord.Member]:
     guild = ctx.guild
     existing_role = get_lab_role(guild, group)
     student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])

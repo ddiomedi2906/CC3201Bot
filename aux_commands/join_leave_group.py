@@ -4,7 +4,7 @@ import discord
 
 from utils.guild_config import GUILD_CONFIG
 from utils import helper_functions as hpf, bot_messages as btm
-from utils.helper_functions import get_nick, all_members_in_group
+from utils.helper_functions import get_nick, all_students_in_groups
 from aux_commands.raise_hand_for_help import member_in_teaching_team
 
 """
@@ -26,7 +26,7 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) ->
         await ctx.send(btm.message_member_already_in_group(get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group_name))
-    elif len(all_members_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    elif len(all_students_in_groups(ctx, group)) >= MAX_GROUP_SIZE:
         await ctx.send(btm.message_max_members_in_group_error(new_lab_group_name, MAX_GROUP_SIZE))
     else:
         await member.add_roles(new_role)
@@ -82,7 +82,7 @@ async def aux_move_to(ctx, member_mention: discord.Member, group: int):
     MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
     if not member:
         await ctx.send(btm.message_member_not_exists(member_mention.nick))
-    elif len(all_members_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    elif len(all_students_in_groups(ctx, group)) >= MAX_GROUP_SIZE:
         await ctx.send(
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
                                                    MAX_GROUP_SIZE))
