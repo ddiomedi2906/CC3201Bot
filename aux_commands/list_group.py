@@ -31,7 +31,7 @@ async def aux_send_list_by_chunks(ctx, message_size: int = 200):
                 message_acc += '\n' + message
             elif message:
                 message_list.append(message_acc)
-                message_acc = '\n' + message
+                message_acc = '.\n' + message
         message_list.append(message_acc)
         if existing_lab_groups:
             for message in message_list:
