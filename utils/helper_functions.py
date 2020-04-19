@@ -68,11 +68,28 @@ def all_existing_lab_roles(guild: discord.Guild) -> List[discord.Role]:
 
 
 def all_existing_lab_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
-    return list(filter(lambda r: GROUP_NAME_PATTERN.search(r.name), guild.categories))
+    return [group for group in guild.categories if GROUP_NAME_PATTERN.search(group.name)]
 
 
 def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
     return [member for member in guild.members if existing_member_lab_role(member) is None]
+
+
+def all_non_empty_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
+    student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])
+    groups = set()
+    for member in guild.members:
+        if student_role in member.roles:
+            existing_lab_group = existing_member_lab_group(member)
+            if existing_lab_group:
+                groups.add(existing_lab_group)
+    return list(groups)
+
+
+def all_empty_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
+    all_groups = set(all_existing_lab_groups(guild))
+    non_empty_groups = set(all_non_empty_groups(guild))
+    return list(all_groups - non_empty_groups)
 
 
 def all_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
