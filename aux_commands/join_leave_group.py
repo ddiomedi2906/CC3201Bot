@@ -33,12 +33,12 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) ->
         print(f'Role "{new_role}" assigned to {member}')
         # Move to voice channel if connected
         voice_channel = discord.utils.get(guild.voice_channels,
-                                          name=hpf.get_voice_channel_name(group) if type(group) == int else group)
+                                          name=hpf.get_lab_voice_channel(guild, group))
         if voice_channel and member.voice and member.voice.channel:
             await member.move_to(voice_channel)
         # Message to group text channel
         text_channel = discord.utils.get(guild.text_channels,
-                                         name=hpf.get_text_channel_name(group) if type(group) == int else group)
+                                         name=hpf.get_lab_text_channel(guild, group))
         if text_channel:
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
         # Message to general channel
@@ -77,15 +77,11 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         await ctx.send(btm.message_member_not_in_group(get_nick(member)))
 
 
-async def aux_move_to(ctx, member_mention: discord.Member, group: int):
-    member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
+async def aux_move_to(ctx, member: discord.Member, group: int):
     MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
-    if not member:
-        await ctx.send(btm.message_member_not_exists(member_mention.nick))
-    elif len(all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    if len(all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
         await ctx.send(
-            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group) if type(group) == int else group,
-                                                   MAX_GROUP_SIZE))
+            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group), MAX_GROUP_SIZE))
     else:
         await aux_leave_group(ctx, member, show_not_in_group_error=False)
         await aux_join_group(ctx, member, group)
