@@ -59,8 +59,8 @@ class GuildConfig:
         try:
             with open(self.config_json) as inJsonFile:
                 data = json.load(inJsonFile)
-            for key, value in self.config:
-                data[guild.id][key] = value
+            for key, value in self.config[guild.id].items():
+                data[str(guild.id)][key] = value
             with open(self.config_json, "w") as outJsonFile:
                 json.dump(data, outJsonFile, indent=2)
             return True
