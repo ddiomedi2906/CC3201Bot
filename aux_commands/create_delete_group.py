@@ -137,7 +137,7 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
             await general_channel.send(btm.message_group_deleted(category.name))
 
 
-async def aux_make_group(ctx, members: List[discord.Member]) -> bool:
+async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool = False) -> bool:
     guild = ctx.guild
     if not member_in_teaching_team(ctx.author, guild) and ctx.author not in members:
         members.append(ctx.author)
@@ -159,7 +159,10 @@ async def aux_make_group(ctx, members: List[discord.Member]) -> bool:
     if not empty_groups:
         extra_group = await aux_create_group(ctx)
         empty_groups.append(extra_group)
-    new_group = random.choice(empty_groups)
+    if random_choice:
+        new_group = random.choice(empty_groups)
+    else:
+        new_group = sorted(empty_groups, key=lambda g: g.name, reverse=False)[0]
     print(f'Moving members {" ".join([hpf.get_nick(m) for m in members])} to {new_group.name}')
     success = True
     for member in members:
