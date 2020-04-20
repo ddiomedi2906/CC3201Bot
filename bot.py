@@ -1,9 +1,11 @@
 # bot.py
+import asyncio
 import re
 import random
 import sys
 from asyncio import Lock
 from typing import Union, Optional
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -11,7 +13,7 @@ from discord.ext import commands
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
 from aux_commands.clean_group import aux_clean_group
-from aux_commands.init_functions import init_guild
+from aux_commands.init_functions import aux_init_guild
 from aux_commands.open_close_groups import aux_open_group, aux_close_group
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
@@ -41,7 +43,8 @@ async def on_ready():
     # guild = discord.utils.get(bot.guilds, id=int(GUILD_ID))
     print(f'{bot.user} is connected to the following guild:\n')
     for guild in bot.guilds:
-        await init_guild(guild)
+        await aux_init_guild(guild)
+    bot.loop.create_task(save_all_task())
     print("Ready to roll!")
 
 
@@ -429,6 +432,23 @@ async def salute(ctx):
     # await ctx.author.create_dm()
     # await ctx.author.dm_channel.send(f'Hi {ctx.author.name}, welcome to my Discord server!')
 
+"""
+####################################################################
+###################### PERIODIC EVENTS BOT #########################
+####################################################################
+"""
+
+
+async def save_all_task():
+    await bot.wait_until_ready()
+    guild = bot.get_guild(int(TEST_GUILD_ID))
+    general_text_channel = hpf.get_general_text_channel(guild)
+    sleep_time = timedelta(minutes=30, seconds=0)
+    while True:
+        await GUILD_CONFIG.save_all()
+        now = datetime.now()
+        await general_text_channel.send(f"Last config snapshot at {now.strftime('%H:%M:%S %Z on %d %b %Y')}")
+        await asyncio.sleep(sleep_time.seconds)
 """
 ####################################################################
 ############################ RUN BOT ###############################

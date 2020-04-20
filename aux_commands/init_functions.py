@@ -8,7 +8,7 @@ from utils import helper_functions as hpf
 from utils.permission_mask import PMask
 
 
-async def init_guild(guild: discord.Guild):
+async def aux_init_guild(guild: discord.Guild):
     if not guild in GUILD_CONFIG:
         return
     print(f'{guild.name}(id: {guild.id})')
