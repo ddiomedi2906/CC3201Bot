@@ -5,8 +5,6 @@ import discord
 
 from aux_commands.create_delete_group import aux_create_group
 from aux_commands.join_leave_group import aux_join_group
-from utils.helper_functions import all_students_in_group
-from aux_commands.raise_hand_for_help import member_in_teaching_team
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.guild_config import GUILD_CONFIG
 
@@ -25,7 +23,7 @@ async def random_assignment(ctx, member: discord.Member, available_existing_grou
     while len(available_existing_groups) > 0:
         random_lab_group = random.choice(available_existing_groups)
         random_group = hpf.get_lab_group_number(random_lab_group.name)
-        if random_group and len(all_students_in_group(ctx, random_group)) < MAX_GROUP_SIZE:
+        if random_group and len(hpf.all_students_in_group(ctx, random_group)) < MAX_GROUP_SIZE:
             success = await aux_join_group(ctx, member, random_group)
             if success:
                 return available_existing_groups
@@ -80,5 +78,5 @@ async def aux_random_join_all(ctx, *args):
     # Assign groups
     for member in no_group_members:
         if not member.bot and member.status == discord.Status.online \
-                and not member_in_teaching_team(member, ctx.guild):
+                and not hpf.member_in_teaching_team(member, ctx.guild):
             available_lab_groups = await random_assignment(ctx, member, available_lab_groups)

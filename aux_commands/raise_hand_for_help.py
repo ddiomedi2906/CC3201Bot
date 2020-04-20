@@ -1,6 +1,3 @@
-import re
-from typing import List
-
 import discord
 
 from utils.guild_config import GUILD_CONFIG
@@ -11,30 +8,6 @@ from utils import helper_functions as hpf, bot_messages as btm
 ##################### CALL-FOR-HELP FUNCTIONS #######################
 ####################################################################
 """
-
-
-def get_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
-    return [role for role in guild.roles if role.name in GUILD_CONFIG[guild]["TT_ROLES"]]
-
-
-def get_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
-    tt_roles = get_teaching_team_roles(guild)
-    available_team = []
-    for role in tt_roles:
-        available_team.extend(get_online_members_from_role(role))
-    return available_team
-
-
-def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> bool:
-    tt_roles = get_teaching_team_roles(guild)
-    for member_role in member.roles:
-        if discord.utils.get(tt_roles, name=member_role.name):
-            return True
-    return False
-
-
-def get_online_members_from_role(role: discord.Role) -> List[discord.Member]:
-    return [member for member in role.members if member.status == discord.Status.online]
 
 
 async def go_for_help(member: discord.Member, lab_group: discord.CategoryChannel, group: int):
@@ -61,7 +34,7 @@ async def aux_raise_hand(ctx):
     elif ctx.channel != hpf.existing_member_lab_text_channel(member):
         await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
     elif general_channel:
-        online_team = get_teaching_team_members(ctx.author.guild)
+        online_team = hpf.all_teaching_team_members(ctx.author.guild)
         available_team = [member for member in online_team if not hpf.existing_member_lab_group(member)]
         if available_team:
             await ctx.channel.send(btm.message_asking_for_help())

@@ -54,7 +54,7 @@ async def on_member_join(member):
 async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member, discord.User]):
     message = reaction.message
     if message.author == bot.user and len(message.reactions) <= 1 and re.search(r"calling for help", message.content):
-        if rhh.member_in_teaching_team(user, message.guild) and hpf.existing_member_lab_role(user) is None:
+        if hpf.member_in_teaching_team(user, message.guild) and hpf.existing_member_lab_role(user) is None:
             group = hpf.get_lab_group_number(message.content)
             group_name = hpf.get_lab_group_name(group)
             lab_group = discord.utils.get(user.guild.channels, name=group_name)

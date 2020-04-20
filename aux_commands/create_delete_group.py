@@ -9,7 +9,6 @@ from discord import Role
 from utils.guild_config import GUILD_CONFIG
 from utils.permission_mask import PMask
 from aux_commands.join_leave_group import aux_leave_group, aux_join_group
-from aux_commands.raise_hand_for_help import member_in_teaching_team
 from utils import helper_functions as hpf, bot_messages as btm
 
 
@@ -143,7 +142,7 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
 
 async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool = False) -> bool:
     guild = ctx.guild
-    if not member_in_teaching_team(ctx.author, guild) and ctx.author not in members:
+    if not hpf.member_in_teaching_team(ctx.author, guild) and ctx.author not in members:
         members.append(ctx.author)
     members = set(members)
     # Check if there are not more members than allowed

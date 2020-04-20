@@ -101,6 +101,30 @@ def all_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
 
 
+def all_online_members_from_role(role: discord.Role) -> List[discord.Member]:
+    return [member for member in role.members if member.status == discord.Status.online]
+
+
+def all_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
+    return [role for role in guild.roles if role.name in GUILD_CONFIG[guild]["TT_ROLES"]]
+
+
+def all_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
+    tt_roles = all_teaching_team_roles(guild)
+    available_team = []
+    for role in tt_roles:
+        available_team.extend(all_online_members_from_role(role))
+    return available_team
+
+
+def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> bool:
+    tt_roles = all_teaching_team_roles(guild)
+    for member_role in member.roles:
+        if discord.utils.get(tt_roles, name=member_role.name):
+            return True
+    return False
+
+
 def existing_group_number_from_role(role: discord.Role) -> Optional[int]:
     return int(ROLE_NAME_PATTERN.search(role.name).group(1)) if ROLE_NAME_PATTERN.search(role.name) else None
 
