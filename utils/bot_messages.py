@@ -4,85 +4,23 @@ from typing import List
 import discord
 from utils.helper_functions import get_nick
 
-"""
-####################################################################
-######################### GENERAL MESSAGES #########################
-####################################################################
-"""
-
-def message_default_error():
-    return "Brp"
-
-def success_guild_settings_saved(guild: discord.Guild) -> str:
-    return f"**{guild.name}** settings saved successfully!"
-
-def success_guild_settings_changed(guild: discord.Guild) -> str:
-    return f"**{guild.name}** settings changed successfully!"
-
-def message_unexpected_error(command: str, *args):
-    return f"An unexpected error occurs while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
-
-def message_group_not_exists_error(group: str) -> str:
-    return f"**{group}** does not exist!"
-
-def message_command_not_allowed() -> str:
-    return "You are not allowed to execute this command"
-
-def message_member_not_exists(member_name: str) -> str:
-    return f"Member **{member_name}** does not exist!"
-
-def message_lab_group_not_exists(group_name: str) -> str:
-    return f"**{group_name}** does not exist!"
-
-def message_lab_role_not_exists(role_name: str) -> str:
-    return f"Role {role_name} does not exist!"
 
 """
 ####################################################################
-######################### GROUP MESSAGES ###########################
+######################### INFO MESSAGES ###########################
 ####################################################################
 """
+
 
 def message_welcome_group(category_name: str) -> str:
     return f"Welcome to **{category_name}**! \n" \
            f"If you need any help, use `!raise-hand` (or just `!rh`) and I will bring some support. \n" \
            f"If you want to leave the group, use `!leave`."
 
-def message_group_created(category_name: str, group: int) -> str:
-    return f"New **{category_name}** created! To join the group use `!join {group}`"
-
-def message_group_deleted(category_name: str) -> str:
-    return f"**{category_name}** deleted!"
-
-def message_group_cleaned(category_name: str) -> str:
-    return f"**{category_name}** cleaned!"
-
-def message_member_joined_group(member_name: str, group_name: str) -> str:
-    return f"**{member_name}** has joined to **{group_name}!**"
-
-def message_member_need_name_error(member: discord.Member) -> str:
-    return f"Hey **{member.mention}**, set your nickname before joining a group."
-
-def message_mention_member_when_join_group(member: discord.Member, group_name: str) -> str:
-    return f"**{member.mention}** has joined to **{group_name}!**"
-
-def message_member_already_in_group(member_name: str, group_name: str) -> str:
-    return f"**{member_name}** is already part of **{group_name}!**"
-
-def message_max_members_in_group_error(group_name: str, max_size: int) -> str:
-    return f"**{group_name}** has reached its maximum limit! (**{max_size}**)"
-
-def message_too_many_members_error(max_size: int) -> str:
-    return f"Groups can have only **{max_size}** student{'s' if max_size > 1 else ''}!"
-
-def message_member_left_group(member_name: str, group_name: str) -> str:
-    return f"**{member_name}** has left **{group_name}!**"
-
-def message_member_not_in_group(member_name: str) -> str:
-    return f"**{member_name}** is not part of any group!"
 
 def message_where_is_member(member: discord.Member, lab_group: discord.CategoryChannel) -> str:
     return f"**{member.mention}** is on **{lab_group.name}**"
+
 
 def broadcast_message_from(member: discord.Member, message: str) -> str:
     return f"**Broadcast message from {get_nick(member)}!**\n" \
@@ -90,30 +28,121 @@ def broadcast_message_from(member: discord.Member, message: str) -> str:
 
 """
 ####################################################################
-####################### GROUP EDIT MESSAGES ########################
+######################### SUCCESS MESSAGES #########################
 ####################################################################
 """
+
+
+def message_group_created(category_name: str, group: int) -> str:
+    return f"New **{category_name}** created! To join the group use `!join {group}`"
+
+
+def message_group_deleted(category_name: str) -> str:
+    return f"**{category_name}** deleted!"
+
+
+def message_group_cleaned(category_name: str) -> str:
+    return f"**{category_name}** cleaned!"
+
+
+def message_member_joined_group(member_name: str, group_name: str) -> str:
+    return f"**{member_name}** has joined to **{group_name}!**"
+
+
+def message_mention_member_when_join_group(member: discord.Member, group_name: str) -> str:
+    return f"**{member.mention}** has joined to **{group_name}!**"
+
+
+def message_member_left_group(member_name: str, group_name: str) -> str:
+    return f"**{member_name}** has left **{group_name}!**"
+
 
 def message_allow_to_success(p_masks: List[str], role: discord.Role, lab_group: discord.CategoryChannel) -> str:
     return f"Permission{'s ' if len(p_masks) > 1 else ' '}**{'|'.join(p_masks)}** allowed for **{role}** in **{lab_group}**"
 
+
 def message_deny_to_success(p_masks: List[str], role: discord.Role, lab_group: discord.CategoryChannel) -> str:
     return f"Permission{'s ' if len(p_masks) > 1 else ' '}**{'|'.join(p_masks)}** denied for **{role}** in **{lab_group}**"
 
-def message_role_permissions_not_modificable_error(role: discord.Role) -> str:
-    return f"Role {role}'s permissions can't be modified!"
-
-def message_permission_mask_not_valid(p_mask: str) -> str:
-    return f"**{p_mask}** is not a valid permission mask!"
 
 def message_allow_all_success(p_masks: List[str], roles: List[discord.Role]) -> str:
     return  f"Permission{'s ' if len(p_masks) > 1 else ' '}{'|'.join(p_masks)} allowed" + \
         f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
 
+
 def message_deny_all_success(p_masks: List[str], roles: List[discord.Role]) -> str:
     return f"Permission{'s ' if len(p_masks) > 1 else ' '}{'|'.join(p_masks)} denied " + \
         f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
 
+
+def success_guild_settings_saved(guild: discord.Guild) -> str:
+    return f"**{guild.name}** settings saved successfully!"
+
+
+def success_guild_settings_changed(guild: discord.Guild) -> str:
+    return f"**{guild.name}** settings changed successfully!"
+
+"""
+####################################################################
+######################### ERROR MESSAGES ###########################
+####################################################################
+"""
+
+
+def message_default_error():
+    return "Brp"
+
+
+def message_unexpected_error(command: str, *args):
+    return f"An unexpected error occurs while executing `!{command + (' ' if len(args) > 0 else '') + ' '.join(args)}`"
+
+
+def message_group_not_exists_error(group: str) -> str:
+    return f"**{group}** does not exist!"
+
+
+def message_command_not_allowed() -> str:
+    return "You are not allowed to execute this command"
+
+
+def message_member_not_exists(member_name: str) -> str:
+    return f"Member **{member_name}** does not exist!"
+
+
+def message_lab_group_not_exists(group_name: str) -> str:
+    return f"**{group_name}** does not exist!"
+
+
+def message_lab_role_not_exists(role_name: str) -> str:
+    return f"Role **{role_name}** does not exist!"
+
+
+def message_member_not_in_group(member_name: str) -> str:
+    return f"**{member_name}** is not part of any group!"
+
+
+def message_member_need_name_error(member: discord.Member) -> str:
+    return f"Hey **{member.mention}**, set your nickname before joining a group."
+
+
+def message_member_already_in_group(member_name: str, group_name: str) -> str:
+    return f"**{member_name}** is already part of **{group_name}!**"
+
+
+def message_max_members_in_group_error(group_name: str, max_size: int) -> str:
+    return f"**{group_name}** has reached its maximum limit! (**{max_size}**)"
+
+
+def message_too_many_members_error(max_size: int) -> str:
+    return f"Groups can have only **{max_size}** student{'s' if max_size > 1 else ''}!"
+
+
+def message_role_permissions_not_modificable_error(role: discord.Role) -> str:
+    return f"Role {role}'s permissions can't be modified!"
+
+
+def message_permission_mask_not_valid(p_mask: str) -> str:
+    return f"**{p_mask}** is not a valid permission mask!"
 
 """
 ####################################################################
