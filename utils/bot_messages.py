@@ -117,7 +117,7 @@ def message_lab_role_not_exists(role_name: str) -> str:
     return f"Role **{role_name}** does not exist!"
 
 
-def message_member_not_in_group(member_name: str) -> str:
+def message_member_not_in_any_group(member_name: str) -> str:
     return f"**{member_name}** is not part of any group!"
 
 

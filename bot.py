@@ -379,7 +379,7 @@ async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_n
             if lab_group:
                 await ctx.send(btm.message_where_is_member(member, lab_group))
             else:
-                await ctx.send(btm.message_member_not_in_group(get_nick(member)))
+                await ctx.send(btm.message_member_not_in_any_group(get_nick(member)))
 
 
 @bot.command(name='roll_dice', help='Simulates rolling dice.')
