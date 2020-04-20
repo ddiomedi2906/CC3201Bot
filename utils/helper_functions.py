@@ -152,7 +152,7 @@ def existing_member_lab_group(member: discord.Member) -> Optional[discord.Catego
     for role in member_roles:
         if ROLE_NAME_PATTERN.search(role.name):
             num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
-            return discord.utils.get(member.guild.categories, name=get_lab_group_name(num))
+            return get_lab_group(member.guild, num)
     return None
 
 
@@ -161,7 +161,7 @@ def existing_member_lab_text_channel(member: discord.Member) -> Optional[discord
     for role in member_roles:
         if ROLE_NAME_PATTERN.search(role.name):
             num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
-            return discord.utils.get(member.guild.channels, name=get_text_channel_name(num))
+            return get_lab_text_channel(member.guild, num)
     return None
 
 
@@ -170,7 +170,7 @@ def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discor
     for role in member_roles:
         if ROLE_NAME_PATTERN.search(role.name):
             num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
-            return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
+            return get_lab_voice_channel(member.guild, num)
     return None
 
 
