@@ -4,6 +4,8 @@ from typing import Optional
 
 from discord.ext import commands
 
+from utils import bot_messages as btm, helper_functions as hpf
+
 
 def convert_bool(arg: str) -> Optional[bool]:
     lowered = arg.lower()
@@ -45,3 +47,15 @@ class GuildSettings:
     @property
     def items(self):
         return self.config.items()
+
+
+class LabGroup(commands.CategoryChannelConverter):
+    async def convert(self, ctx, group):
+        try:
+            name = hpf.get_lab_group_name(int(group))
+        except ValueError:
+            name = group
+        existing_group = hpf.get_lab_group(ctx.guild, name)
+        if existing_group:
+            return existing_group
+        raise commands.BadArgument(btm.message_group_not_exists_error(name))
