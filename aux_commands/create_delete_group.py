@@ -6,7 +6,8 @@ from typing import Optional, Union, List
 import discord
 from discord import Role
 
-from aux_commands.open_close_groups import aux_open_group, aux_remove_group
+from aux_commands.open_close_groups import aux_remove_group, open_group
+from global_variables import STUDENT_ROLE_NAME
 from utils.guild_config import GUILD_CONFIG
 from utils.permission_mask import PMask
 from aux_commands.join_leave_group import aux_leave_group, aux_join_group
@@ -89,7 +90,7 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
                 can_not_view_channel = discord.Permissions(PMask.VIEW)
                 overwrites = {role: discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
                               for role in hpf.all_existing_lab_roles(guild)}
-                student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])
+                student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
                 if student_role:
                     overwrites[student_role] = discord.PermissionOverwrite.from_pair(default, can_not_view_channel)
                 overwrites[new_role] = discord.PermissionOverwrite.from_pair(allow_text_voice_stream, default)
@@ -107,9 +108,10 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
                 if general_channel:
                     await general_channel.send(btm.message_group_created(new_category_name, next_num))
                 await text_channel.send(btm.message_welcome_group(new_category_name))
-                await aux_open_group(guild, new_category)
+                await open_group(guild, new_category)
                 return new_category
             except Exception as e:
+                print(e)
                 await ctx.send(btm.message_unexpected_error("create-group"))
                 await aux_delete_group(ctx, next_num, show_bot_message=False)
                 raise e
