@@ -1,3 +1,4 @@
+from asyncio import Lock
 from typing import List
 
 import discord
@@ -5,6 +6,7 @@ import discord
 from utils.guild_config import GUILD_CONFIG
 import utils.helper_functions as hpf, utils.bot_messages as btm
 
+open_close_lock = Lock()
 
 def is_open_group(guild: discord.Guild, group: discord.CategoryChannel) -> bool:
     return group.name in GUILD_CONFIG[guild]["OPEN_GROUPS"]
@@ -23,28 +25,31 @@ def all_closed_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
 
 
 async def open_group(guild: discord.Guild, group: discord.CategoryChannel):
-    if is_closed_group(guild, group):
-        GUILD_CONFIG[guild]["CLOSED_GROUPS"].remove(group.name)
-    GUILD_CONFIG[guild]["OPEN_GROUPS"].add(group.name)
+    async with open_close_lock:
+        if is_closed_group(guild, group):
+            GUILD_CONFIG[guild]["CLOSED_GROUPS"].remove(group.name)
+        GUILD_CONFIG[guild]["OPEN_GROUPS"].add(group.name)
     text_channel = hpf.get_lab_text_channel(guild, group.name)
     if text_channel:
         await text_channel.send(btm.success_group_open(group))
 
 
 async def close_group(guild: discord.Guild, group: discord.CategoryChannel):
-    if is_open_group(guild, group):
-        GUILD_CONFIG[guild]["OPEN_GROUPS"].remove(group.name)
-    GUILD_CONFIG[guild]["CLOSED_GROUPS"].add(group.name)
+    async with open_close_lock:
+        if is_open_group(guild, group):
+            GUILD_CONFIG[guild]["OPEN_GROUPS"].remove(group.name)
+        GUILD_CONFIG[guild]["CLOSED_GROUPS"].add(group.name)
     text_channel = hpf.get_lab_text_channel(guild, group.name)
     if text_channel:
         await text_channel.send(btm.success_group_closed(group))
 
 
 async def aux_remove_group(guild: discord.Guild, group: discord.CategoryChannel):
-    if is_closed_group(guild, group):
-        GUILD_CONFIG[guild]["CLOSED_GROUPS"].remove(group.name)
-    if is_open_group(guild, group):
-        GUILD_CONFIG[guild]["OPEN_GROUPS"].remove(group.name)
+    async with open_close_lock:
+        if is_closed_group(guild, group):
+            GUILD_CONFIG[guild]["CLOSED_GROUPS"].remove(group.name)
+        if is_open_group(guild, group):
+            GUILD_CONFIG[guild]["OPEN_GROUPS"].remove(group.name)
 
 
 async def aux_open_group(ctx, group: discord.CategoryChannel):
