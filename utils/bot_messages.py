@@ -121,6 +121,10 @@ def message_member_not_in_any_group(member_name: str) -> str:
     return f"**{member_name}** is not part of any group!"
 
 
+def error_member_not_part_of_group(member: discord.Member, group: discord.CategoryChannel) -> str:
+    return f"**{get_nick(member)}** is not part of **{group.name}**!"
+
+
 def message_member_need_name_error(member: discord.Member) -> str:
     return f"Hey **{member.mention}**, set your nickname before joining a group."
 

@@ -48,6 +48,14 @@ class GuildConfig:
         self.config = {}
         for guild_id, values in data.items():
             self.config[int(guild_id)] = GuildDict(values.items())
+            if "OPEN_GROUPS" not in self.config[int(guild_id)]:
+                self.config[int(guild_id)]["OPEN_GROUPS"] = set()
+            else:
+                self.config[int(guild_id)]["OPEN_GROUPS"] = set(self.config[int(guild_id)]["OPEN_GROUPS"])
+            if "CLOSED_GROUPS" not in self.config[int(guild_id)]:
+                self.config[int(guild_id)]["CLOSED_GROUPS"] = set()
+            else:
+                self.config[int(guild_id)]["CLOSED_GROUPS"] = set(self.config[int(guild_id)]["CLOSED_GROUPS"])
 
     def guilds(self) -> List[int]:
         return list(self.config.keys())

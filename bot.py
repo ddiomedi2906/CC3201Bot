@@ -12,18 +12,18 @@ from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
 from aux_commands.clean_group import aux_clean_group
 from aux_commands.init_functions import init_guild
+from aux_commands.open_close_groups import aux_open_group, aux_close_group
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 from utils.guild_config import GUILD_CONFIG
 from utils.helper_functions import get_nick
+from utils.my_converters import GuildSettings, LabGroup
 
-# TODO: queue message
 # TODO: opened and closed groups
+# TODO: queue message
 # TODO: set main
 # TODO: spanish messages
-from utils.my_converters import GuildSettings
-
 bot = commands.Bot(command_prefix='!')
 join_make_group_lock = Lock()
 open_close_lock = Lock()
@@ -200,6 +200,27 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
 async def random_join_all_command(ctx, *args):
     async with ctx.channel.typing():
         await rjg.aux_random_join_all(ctx, *args)
+
+"""
+####################################################################
+##################### OPEN/CLOSE GROUPS ############################
+####################################################################
+"""
+
+
+@bot.command(name='open', help='Open group. Anyone can join the group.', hidden=True)
+async def open_command(ctx, *, group: LabGroup):
+    async with ctx.channel.typing():
+        async with open_close_lock:
+            await aux_open_group(ctx, group)
+
+
+@bot.command(name='close', help='Close group. No one can join the group.', hidden=True)
+async def close_command(ctx, *, group: LabGroup):
+    async with ctx.channel.typing():
+        async with open_close_lock:
+            await aux_close_group(ctx, group)
+
 
 """
 ####################################################################
