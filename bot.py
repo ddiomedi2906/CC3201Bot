@@ -242,10 +242,8 @@ async def clean_command(ctx, group: Union[int, str]):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def clean_all_command(ctx):
     async with ctx.channel.typing():
-        guild = ctx.guild
-        for category in sorted(guild.categories, key=lambda c: c.name, reverse=False):
-            if re.search(r"Group[\s]+[0-9]+", category.name):
-                await aux_clean_group(ctx, category.name)
+        for group in sorted(hpf.all_existing_lab_groups(ctx.guild), key=lambda c: c.name, reverse=False):
+            await aux_clean_group(ctx, group.name)
 
 """
 ####################################################################
