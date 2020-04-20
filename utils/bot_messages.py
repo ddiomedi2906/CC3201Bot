@@ -135,6 +135,10 @@ def message_lab_group_not_exists(group_name: str) -> str:
     return f"**{group_name}** does not exist!"
 
 
+def error_lab_group_is_closed(group: discord.CategoryChannel) -> str:
+    return f"**{group.name}** is closed!"
+
+
 def message_lab_role_not_exists(role_name: str) -> str:
     return f"Role **{role_name}** does not exist!"
 
