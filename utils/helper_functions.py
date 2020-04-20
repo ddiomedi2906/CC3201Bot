@@ -3,6 +3,7 @@ from typing import Union, Optional, List
 
 import discord
 
+from global_variables import STUDENT_ROLE_NAME
 from utils.guild_config import GUILD_CONFIG
 
 """
@@ -76,7 +77,7 @@ def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
 
 
 def all_non_empty_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
-    student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])
+    student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     groups = set()
     for member in guild.members:
         if student_role in member.roles:
@@ -95,7 +96,7 @@ def all_empty_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
 def all_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     guild = ctx.guild
     existing_role = get_lab_role(guild, group)
-    student_role = discord.utils.get(guild.roles, name=GUILD_CONFIG[guild]["STUDENT_ROLE_NAME"])
+    student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     if not existing_role:
         return []
     return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
@@ -171,3 +172,7 @@ def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discor
             num = int(ROLE_NAME_PATTERN.search(role.name).group(1))
             return discord.utils.get(member.guild.channels, name=get_voice_channel_name(num))
     return None
+
+
+def get_general_text_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
+    return discord.utils.get(guild.text_channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
