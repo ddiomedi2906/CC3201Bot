@@ -6,6 +6,7 @@ from typing import Optional, Union, List
 import discord
 from discord import Role
 
+from aux_commands.open_close_groups import aux_open_group, aux_remove_group
 from utils.guild_config import GUILD_CONFIG
 from utils.permission_mask import PMask
 from aux_commands.join_leave_group import aux_leave_group, aux_join_group
@@ -106,6 +107,7 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
                 if general_channel:
                     await general_channel.send(btm.message_group_created(new_category_name, next_num))
                 await text_channel.send(btm.message_welcome_group(new_category_name))
+                await aux_open_group(guild, new_category)
                 return new_category
             except Exception as e:
                 await ctx.send(btm.message_unexpected_error("create-group"))
@@ -128,6 +130,7 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
                 await channel.delete()
             print(f'Deleting category: {category.name}')
             await category.delete()
+            await aux_remove_group(guild, category)
             success = True
         elif show_bot_message:
             await ctx.send(btm.message_group_not_exists_error(category.name))
