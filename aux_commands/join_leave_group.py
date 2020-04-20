@@ -31,18 +31,15 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) ->
         await member.add_roles(new_role)
         print(f'Role "{new_role}" assigned to {member}')
         # Move to voice channel if connected
-        voice_channel = discord.utils.get(guild.voice_channels,
-                                          name=hpf.get_lab_voice_channel(guild, group))
+        voice_channel = hpf.get_lab_voice_channel(guild, group)
         if voice_channel and member.voice and member.voice.channel:
             await member.move_to(voice_channel)
         # Message to group text channel
-        text_channel = discord.utils.get(guild.text_channels,
-                                         name=hpf.get_lab_text_channel(guild, group))
+        text_channel = hpf.get_lab_text_channel(guild, group)
         if text_channel:
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
         # Message to general channel
-        general_text_channel = discord.utils.get(guild.text_channels,
-                                                 name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
+        general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group_name))
         return True
@@ -57,8 +54,7 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         # Disconnect from the group voice channel if connected to it
         voice_channel = hpf.existing_member_lab_voice_channel(member)
         if voice_channel and member.voice and member.voice.channel == voice_channel:
-            general_voice_channel = discord.utils.get(guild.voice_channels,
-                                                      name=GUILD_CONFIG[guild]["GENERAL_VOICE_CHANNEL_NAME"])
+            general_voice_channel = hpf.get_general_voice_channel(guild)
             # if no general_voice_channel, it will move user out of the current voice channel
             await member.move_to(general_voice_channel if hpf.member_in_teaching_team(member, guild) else None)
         # Message to group text channel
@@ -68,8 +64,7 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         await member.remove_roles(existing_lab_role)
         print(f'Role "{existing_lab_role}" removed to {member}')
         # Message to general channel
-        general_text_channel = discord.utils.get(guild.text_channels,
-                                                 name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
+        general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
         if hpf.all_students_in_group(ctx, existing_lab_group.name) < 1:

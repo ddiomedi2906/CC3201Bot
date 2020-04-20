@@ -176,3 +176,7 @@ def existing_member_lab_voice_channel(member: discord.Member) -> Optional[discor
 
 def get_general_text_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
     return discord.utils.get(guild.text_channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
+
+
+def get_general_voice_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
+    return discord.utils.get(guild.voice_channels, name=GUILD_CONFIG[guild]["GENERAL_VOICE_CHANNEL_NAME"])
