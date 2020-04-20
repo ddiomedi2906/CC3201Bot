@@ -11,7 +11,8 @@ from utils.permission_mask import PMask
 async def aux_init_guild(guild: discord.Guild):
     if not guild in GUILD_CONFIG:
         return
-    print(f'{guild.name}(id: {guild.id})')
+    #print(f'{guild.name} (id: {guild.id})')
+    print(guild.name)
     members = '\n - '.join([hpf.get_nick(member) for member in guild.members])
     print(f'Guild Members:\n - {members}')
     # Create or update roles

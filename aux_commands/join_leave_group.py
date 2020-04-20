@@ -71,6 +71,7 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
             await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
         if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1:
             await open_group(guild, existing_lab_group)
+            await general_text_channel.send(btm.success_group_open(existing_lab_group))
     elif show_not_in_group_error:
         await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
 
