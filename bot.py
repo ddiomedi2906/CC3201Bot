@@ -2,6 +2,7 @@
 import re
 import random
 import sys
+from asyncio import Lock
 from typing import Union, Optional
 
 import discord
@@ -24,6 +25,8 @@ from utils.helper_functions import get_nick
 from utils.my_converters import GuildSettings
 
 bot = commands.Bot(command_prefix='!')
+join_make_group_lock = Lock()
+open_close_lock = Lock()
 
 """
 ####################################################################
@@ -141,7 +144,8 @@ async def make_group_command(ctx, members: commands.Greedy[discord.Member], name
         if name_not_valid:
             await ctx.send(btm.message_member_not_exists(name_not_valid))
         else:
-            await cdg.aux_make_group(ctx, members)
+            async with join_make_group_lock:
+                await cdg.aux_make_group(ctx, members)
 
 """
 ####################################################################
@@ -164,7 +168,8 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def join_command(ctx, group: Union[int, str]):
     async with ctx.channel.typing():
-        await jlg.aux_join_group(ctx, ctx.author, group)
+        async with join_make_group_lock:
+            await jlg.aux_join_group(ctx, ctx.author, group)
 
 
 @bot.command(name='leave', help='Leave a group. Need to provide the group number.')
