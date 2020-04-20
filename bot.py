@@ -130,10 +130,8 @@ async def delete_group(ctx, group: Union[int, str]):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def delete_all_groups(ctx):
     async with ctx.channel.typing():
-        guild = ctx.guild
-        existing_lab_groups = hpf.all_existing_lab_groups(guild)
-        for category in sorted(existing_lab_groups, key=lambda c: c.name, reverse=True):
-            await cdg.aux_delete_group(ctx, category.name)
+        for group in sorted(hpf.all_existing_lab_groups(ctx.guild), key=lambda c: c.name, reverse=True):
+            await cdg.aux_delete_group(ctx, group.name)
 
 
 @bot.command(name='group', aliases=["make-group"], help='Make a group with the given members.', hidden=True)
