@@ -97,6 +97,10 @@ def message_deny_all_success(p_masks: List[str], roles: List[discord.Role]) -> s
         f"for {len(roles)} group{'s' if len(roles) > 1 else ''}"
 
 
+def success_guild_init(guild: discord.Guild) -> str:
+    return f"**{guild.name}** has been initialized successfully!"
+
+
 def success_guild_settings_saved(guild: discord.Guild) -> str:
     return f"**{guild.name}** settings saved successfully!"
 
@@ -157,6 +161,10 @@ def message_member_need_name_error(member: discord.Member) -> str:
 
 def message_member_already_in_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** is already part of **{group_name}!**"
+
+
+def error_guild_already_init(guild: discord.Guild) -> str:
+    return f"**{guild.name}** has already been initialized!"
 
 
 def message_max_members_in_group_error(group_name: str, max_size: int) -> str:

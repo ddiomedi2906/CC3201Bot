@@ -346,6 +346,21 @@ async def raise_hand(ctx):
 """
 
 
+@bot.command(name='init', help='Initialize guild settings.', hidden=True)
+@commands.cooldown(rate=5, per=1)
+@commands.has_guild_permissions(manage_roles=True)
+@commands.bot_has_guild_permissions(manage_roles=True)
+async def init_command(ctx):
+    async with ctx.channel.typing():
+        guild = ctx.guild
+        if guild not in GUILD_CONFIG:
+            await GUILD_CONFIG.init_guild_config(guild)
+            await aux_init_guild(guild)
+            await ctx.send(btm.success_guild_init(guild))
+        else:
+            await ctx.send(btm.error_guild_already_init(guild))
+
+
 @bot.command(name='save', help='Save guild settings.', hidden=True)
 @commands.cooldown(rate=5, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
