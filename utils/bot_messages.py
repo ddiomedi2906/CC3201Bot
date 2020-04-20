@@ -19,6 +19,11 @@ def message_welcome_group(category_name: str) -> str:
            f"If you want to leave the group, use `!leave`."
 
 
+def info_group_details(members: List[discord.Member], group: discord.CategoryChannel, is_open: bool) -> str:
+    member_list = '\n - '.join([""] + [get_nick(member) for member in members]) if members else info_list_no_members()
+    return f"**{group.name}** ({'Open' if is_open else 'Closed'})\n```{member_list}```"
+
+
 def message_where_is_member(member: discord.Member, lab_group: discord.CategoryChannel) -> str:
     return f"**{member.mention}** is on **{lab_group.name}**"
 
@@ -26,6 +31,14 @@ def message_where_is_member(member: discord.Member, lab_group: discord.CategoryC
 def broadcast_message_from(member: discord.Member, message: str) -> str:
     return f"**Broadcast message from {get_nick(member)}!**\n" \
            f"> {message}"
+
+
+def info_list_no_members() -> str:
+    return "Empty"
+
+
+def info_no_groups() -> str:
+    return "No groups created yet!"
 
 """
 ####################################################################
@@ -40,6 +53,14 @@ def message_group_created(category_name: str, group: int) -> str:
 
 def message_group_deleted(category_name: str) -> str:
     return f"**{category_name}** deleted!"
+
+
+def success_group_open(group: discord.CategoryChannel) -> str:
+    return f"**{group.name}** is `open`!"
+
+
+def success_group_closed(group: discord.CategoryChannel) -> str:
+    return f"**{group.name}** is `closed`!"
 
 
 def message_group_cleaned(category_name: str) -> str:
@@ -189,12 +210,6 @@ def get_emoji_group(number: int, letter: str = 'g') -> str:
 def message_list_group_members(group: int, members: List) -> str:
     member_list = '\n - '.join([""] + [get_nick(member) for member in members])
     return f"{get_emoji_group(group)}```{member_list}```"
-
-def message_no_members() -> str:
-    return f"Nobody on this group"
-
-def message_no_groups() -> str:
-    return f"No groups created yet"
 
 """
 ####################################################################

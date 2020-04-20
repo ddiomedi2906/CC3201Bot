@@ -252,14 +252,12 @@ async def clean_all_command(ctx):
 """
 
 
-@bot.command(name='members', help="List lab group's members.", hidden=True)
+@bot.command(name='info', help="Show group details.")
 @commands.cooldown(rate=1, per=1)
-@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
-async def get_group_members(ctx, group: int):
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
+async def get_info(ctx, *, group: LabGroup):
     async with ctx.channel.typing():
-        message = lg.aux_get_group_members(ctx, group)
-        if message:
-            await ctx.send(message)
+        await ctx.send(lg.aux_group_details(ctx, group, details=True))
 
 
 @bot.command(name='lab-list', aliases=["list"], help='List all group with its members.', hidden=True)
@@ -267,7 +265,15 @@ async def get_group_members(ctx, group: int):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
     async with ctx.channel.typing():
-        await lg.aux_send_list_by_chunks(ctx, message_size=2000)
+        await lg.aux_get_list(ctx, message_size=2000)
+
+
+@bot.command(name='isopen', help='List all open group with its members.', hidden=True)
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def get_lab_list(ctx):
+    async with ctx.channel.typing():
+        await lg.aux_get_list(ctx, message_size=2000, only_open_groups=True, exclude_empty=False)
 
 
 """
