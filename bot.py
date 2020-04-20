@@ -143,7 +143,9 @@ async def make_group_command(ctx, members: commands.Greedy[discord.Member], name
             await ctx.send(btm.message_member_not_exists(name_not_valid))
         else:
             async with join_make_group_lock:
-                await cdg.aux_make_group(ctx, members)
+                group = await cdg.aux_make_group(ctx, members)
+                if group:
+                    await aux_close_group(ctx, group)
 
 """
 ####################################################################

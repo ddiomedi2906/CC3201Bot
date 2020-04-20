@@ -140,7 +140,7 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
                 await general_channel.send(btm.message_group_deleted(category.name))
 
 
-async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool = False) -> bool:
+async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool = False) -> Optional[discord.CategoryChannel]:
     guild = ctx.guild
     if not hpf.member_in_teaching_team(ctx.author, guild) and ctx.author not in members:
         members.append(ctx.author)
@@ -148,7 +148,7 @@ async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool
     # Check if there are not more members than allowed
     if len(members) > GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]:
         await ctx.send(btm.message_too_many_members_error(GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]))
-        return False
+        return None
     members_with_groups = False
     # Check if any member is already in any group
     for member in members:
@@ -157,7 +157,7 @@ async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool
             members_with_groups = True
             await ctx.send(btm.message_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     if members_with_groups:
-        return False
+        return None
     empty_groups = hpf.all_empty_groups(guild)
     if not empty_groups:
         extra_group = await aux_create_group(ctx)
@@ -169,5 +169,6 @@ async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool
     print(f'Moving members {" ".join([hpf.get_nick(m) for m in members])} to {new_group.name}')
     success = True
     for member in members:
-        success = await aux_join_group(ctx, member, new_group.name)
-    return success
+        success = success and await aux_join_group(ctx, member, new_group.name)
+    if success:
+        return new_group
