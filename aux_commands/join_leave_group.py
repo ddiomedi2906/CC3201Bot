@@ -16,7 +16,7 @@ from utils import helper_functions as hpf, bot_messages as btm
 async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) -> bool:
     guild = ctx.guild
     new_role = hpf.get_lab_role(guild, group)
-    new_lab_group_name = hpf.get_lab_group_name(group) if type(group) == int else group
+    new_lab_group = hpf.get_lab_group(guild, group)
     existing_lab_group = hpf.existing_member_lab_group(member)
     MAX_GROUP_SIZE = GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]
     if GUILD_CONFIG[guild]["REQUIRE_NICKNAME"] and not member.nick:
@@ -24,11 +24,11 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) ->
     elif existing_lab_group:
         await ctx.send(btm.message_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     elif not new_role:
-        await ctx.send(btm.message_lab_group_not_exists(new_lab_group_name))
-    elif is_closed_group(guild, existing_lab_group):
-        await ctx.send(btm.error_lab_group_is_closed(existing_lab_group))
+        await ctx.send(btm.message_lab_group_not_exists(new_lab_group.name))
+    elif not hpf.member_in_teaching_team(member, guild) and is_closed_group(guild, new_lab_group):
+        await ctx.send(btm.error_lab_group_is_closed(new_lab_group))
     elif len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
-        await ctx.send(btm.message_max_members_in_group_error(new_lab_group_name, MAX_GROUP_SIZE))
+        await ctx.send(btm.message_max_members_in_group_error(new_lab_group.name, MAX_GROUP_SIZE))
     else:
         await member.add_roles(new_role)
         print(f'Role "{new_role}" assigned to {member}')
@@ -39,11 +39,11 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) ->
         # Message to group text channel
         text_channel = hpf.get_lab_text_channel(guild, group)
         if text_channel:
-            await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group_name))
+            await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group.name))
         # Message to general channel
         general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel and not hpf.member_in_teaching_team(member, guild):
-            await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group_name))
+            await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group.name))
         return True
     return False
 

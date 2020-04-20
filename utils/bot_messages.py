@@ -29,7 +29,7 @@ def message_where_is_member(member: discord.Member, lab_group: discord.CategoryC
 
 
 def broadcast_message_from(member: discord.Member, message: str) -> str:
-    return f"**Broadcast message from {get_nick(member)}!**\n" \
+    return f"**Broadcast message** from **{get_nick(member)}!**\n" \
            f"> {message}"
 
 
@@ -56,11 +56,11 @@ def message_group_deleted(category_name: str) -> str:
 
 
 def success_group_open(group: discord.CategoryChannel) -> str:
-    return f"**{group.name}** is `open`!"
+    return f"**{group.name}** has open!"
 
 
 def success_group_closed(group: discord.CategoryChannel) -> str:
-    return f"**{group.name}** is `closed`!"
+    return f"**{group.name}** has closed!"
 
 
 def message_group_cleaned(category_name: str) -> str:
