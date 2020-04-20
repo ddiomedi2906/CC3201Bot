@@ -4,6 +4,16 @@ import discord
 
 EMOJI_UNICODE_NAME = {
     'one': "1\ufe0f\u20e3",
+    'two': "2\ufe0f\u20e3",
+    'three': "3\ufe0f\u20e3",
+    'four': "4\ufe0f\u20e3",
+    'five': "5\ufe0f\u20e3",
+    'six': "6\ufe0f\u20e3",
+    'seven': "7\ufe0f\u20e3",
+    'eight': "8\ufe0f\u20e3",
+    'nine': "9\ufe0f\u20e3",
+    'zero': "0\ufe0f\u20e3",
+    'letter_g': "\U0001f1ec",
     'slight_smile': "\U0001f642",
     'thumbsup': "\U0001f44d",
     "raised_hand": "\u270b",
