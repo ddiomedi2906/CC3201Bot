@@ -27,7 +27,7 @@ async def aux_send_list_by_chunks(ctx, message_size: int = 200):
         message_acc = "Lab list:"
         for lab_group in sorted(existing_lab_groups, key=lambda g: g.name):
             message = aux_get_group_members(ctx, lab_group.name, show_empty_error_message=False)
-            if message and len(message_acc) + len(message) <= message_size:
+            if message and len(message_acc) + len(message) < message_size:
                 message_acc += '\n' + message
             elif message:
                 message_list.append(message_acc)

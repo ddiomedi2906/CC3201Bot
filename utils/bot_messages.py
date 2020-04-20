@@ -2,6 +2,7 @@
 from typing import List
 
 import discord
+
 from utils.helper_functions import get_nick
 
 
@@ -187,7 +188,7 @@ def get_emoji_group(number: int, letter: str = 'g') -> str:
 
 def message_list_group_members(group: int, members: List) -> str:
     member_list = '\n - '.join([""] + [get_nick(member) for member in members])
-    return f"{get_emoji_group(group)}`{member_list}`"
+    return f"{get_emoji_group(group)}```{member_list}```"
 
 def message_no_members() -> str:
     return f"Nobody on this group"
