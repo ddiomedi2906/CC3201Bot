@@ -99,7 +99,7 @@ def all_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
     student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     if not existing_role:
         return []
-    return [member for member in guild.members if existing_role in member.roles and student_role in member.roles]
+    return [member for member in existing_role.members if student_role in member.roles]
 
 
 def all_online_members_from_role(role: discord.Role) -> List[discord.Member]:

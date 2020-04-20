@@ -2,7 +2,7 @@ from typing import Union, List
 
 import discord
 
-from aux_commands.open_close_groups import close_group, is_closed_group
+from aux_commands.open_close_groups import is_closed_group, open_group
 from utils.guild_config import GUILD_CONFIG
 from utils import helper_functions as hpf, bot_messages as btm
 
@@ -69,8 +69,8 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
-        if hpf.all_students_in_group(ctx, existing_lab_group.name) < 1:
-            await close_group(guild, existing_lab_group)
+        if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1:
+            await open_group(guild, existing_lab_group)
     elif show_not_in_group_error:
         await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
 
