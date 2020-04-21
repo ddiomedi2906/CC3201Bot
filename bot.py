@@ -59,24 +59,22 @@ async def on_member_join(member):
 @bot.event
 async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member, discord.User]):
     message = reaction.message
+    emoji = reaction.emoji
+    guild = message.guild
     if message.author == bot.user and len(message.reactions) <= 1 and re.search(r"calling for help", message.content):
-        if hpf.member_in_teaching_team(user, message.guild) and hpf.existing_member_lab_role(user) is None:
-            group = hpf.get_lab_group_number(message.content)
-            group_name = hpf.get_lab_group_name(group)
-            lab_group = discord.utils.get(user.guild.channels, name=group_name)
-            await rhh.go_for_help(user, lab_group, group)
-            await reaction.message.channel.send(btm.message_help_on_the_way(user))
-        else:
+        if bot.user in await reaction.users().flatten():
+            return
+        success = False
+        if hpf.member_in_teaching_team(user, guild) and hpf.existing_member_lab_role(user) is None:
+            success = await rhh.go_for_help_from_message(user, message, group=hpf.get_lab_group_number(message.content))
+        if not success:
             await message.remove_reaction(reaction, message.author)
     elif message.author == bot.user:
-        pass
-    else:
-        emoji = reaction.emoji
-        print(emoji, get_unicode_from_emoji(emoji))
         if same_emoji(emoji, 'slight_smile'):
             await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
-            await message.channel.send(emoji + emoji + emoji)
-            # await message.channel.send(emoji + emoji + emoji)
+            await message.channel.send(emoji)
+    else:
+        print(emoji, get_unicode_from_emoji(emoji))
 
 
 @bot.event
@@ -328,6 +326,12 @@ async def deny_all(ctx, *args):
 ##################### CALL-FOR-HELP COMMANDS #######################
 ####################################################################
 """
+
+@bot.command(name='go', aliases=['fly'], help='Go to the next group that has asked for help.')
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def go_for_help_command(ctx):
+    async with ctx.channel.typing():
+        await rhh.aux_go_for_help_from_command(ctx, ctx.author)
 
 
 @bot.command(name='raise-hand', aliases=[get_unicode_emoji_from_alias('raised_hand'), 'rh'],

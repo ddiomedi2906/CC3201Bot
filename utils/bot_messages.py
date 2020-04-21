@@ -237,7 +237,7 @@ def message_help_on_the_way(member: discord.Member, show_mention: bool = False) 
     return f"**{member.mention if show_mention else get_nick(member)}** on the way!"
 
 def message_member_not_in_group_for_help() -> str:
-    return f"You have to be part of a group to raise your hand. Try using `!labgroup join <number>` :)"
+    return f"You have to be part of a group to raise your hand. Try using `!join <number>` or `!make-group` :)"
 
 def message_asking_for_help() -> str:
     return f"Sure, I will bring someone."
