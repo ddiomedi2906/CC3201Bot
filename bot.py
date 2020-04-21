@@ -13,7 +13,8 @@ from discord.ext import commands
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
 from aux_commands.clean_group import aux_clean_group
-from aux_commands.manage_guild_settings import aux_init_guild, aux_set_guild
+from aux_commands.manage_guild_settings import aux_init_guild, aux_set_guild, aux_save_guild
+from aux_commands.misc import aux_salute, aux_broadcast, aux_whereis
 from aux_commands.open_close_groups import aux_open_group, aux_close_group
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
@@ -375,10 +376,7 @@ async def init_guild_command(ctx):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def save_command(ctx):
     async with ctx.channel.typing():
-        if await GUILD_CONFIG.save(ctx.guild):
-            await ctx.send(btm.success_guild_settings_saved(ctx.guild))
-        else:
-            await btm.message_unexpected_error("save")
+        await aux_save_guild(ctx)
 
 
 @bot.command(name='set-guild', aliases=["set"], help='Set guild\'s field.', hidden=True)
@@ -400,34 +398,21 @@ async def set_guild_command(ctx, *, settings: GuildSettings):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def broadcast_command(ctx, *, message: str):
     async with ctx.channel.typing():
-        guild = ctx.guild
-        general_text_channel = hpf.get_general_text_channel(guild)
-        if general_text_channel:
-            await general_text_channel.send(btm.broadcast_message_from(ctx.author, message))
-        for group in hpf.all_existing_lab_groups(guild):
-            text_channel = hpf.get_lab_text_channel(guild, group.name)
-            await text_channel.send(btm.broadcast_message_from(ctx.author, message))
+        await aux_broadcast(ctx, message)
 
 
 @bot.command(name='whereis', aliases=["w"], help='Find members\' group.')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
-async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
+async def where_is_command(ctx, members: commands.Greedy[discord.Member], invalid_name: Optional[str] = None):
     async with ctx.channel.typing():
-        if name_not_valid:
-            await ctx.send(btm.message_member_not_exists(name_not_valid))
-        for member in members:
-            lab_group = hpf.existing_member_lab_group(member)
-            if lab_group:
-                await ctx.send(btm.message_where_is_member(member, lab_group))
-            else:
-                await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
+        await aux_whereis(ctx, members, invalid_name)
 
 
 @bot.command(name='roll_dice', aliases=["dice"], help='Simulates rolling dice.')
 @commands.cooldown(rate=1, per=1)
-async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
+async def roll(ctx, number_of_dice: int = 1, number_of_sides: int = 6):
     dice = [
-        str(random.choice(range(1, number_of_sides + 1)))
+        str(random.choice(range(number_of_sides)) + 1)
         for _ in range(number_of_dice)
     ]
     await ctx.send(', '.join(dice))
@@ -436,9 +421,8 @@ async def roll(ctx, number_of_dice: int=1, number_of_sides: int=6):
 @bot.command(name='salute', help='Say hello to this friendly bot.')
 @commands.cooldown(rate=10, per=1)
 async def salute(ctx):
-    await ctx.send(get_unicode_emoji_from_alias('wave'))
-    # await ctx.author.create_dm()
-    # await ctx.author.dm_channel.send(f'Hi {ctx.author.name}, welcome to my Discord server!')
+    async with ctx.channel.typing():
+        await aux_salute(ctx)
 
 """
 ####################################################################

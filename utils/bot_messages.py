@@ -19,6 +19,10 @@ def message_welcome_group(category_name: str) -> str:
            f"If you want to leave the group, use `!leave`."
 
 
+def info_welcome_to_guild(member: discord.Member, guild: discord.Guild) -> str:
+    return f'Hi {get_nick(member)}, welcome to {guild.name}!'
+
+
 def info_group_details(members: List[discord.Member], group: discord.CategoryChannel, is_open: bool) -> str:
     member_list = '\n - '.join([get_nick(member) for member in members]) if members else info_list_no_members()
     return f"**{group.name}** ({'Open' if is_open else 'Closed'})\n```{member_list}```"
@@ -158,6 +162,11 @@ def error_member_not_part_of_group(member: discord.Member, group: discord.Catego
 
 def message_member_need_name_error(member: discord.Member) -> str:
     return f"Hey **{member.mention}**, set your nickname before joining a group."
+
+
+def error_member_need_name_in_guild(member: discord.Member, guild: discord.Guild) -> str:
+    return f"Welcome **{member.mention}**! Remember to set your nickname in {guild.name} " \
+           "(it has to be **different** to your username)."
 
 
 def error_member_already_in_group(member_name: str, group_name: str) -> str:

@@ -34,6 +34,13 @@ async def aux_init_guild(guild: discord.Guild):
             await open_group(guild, group)
 
 
+async def aux_save_guild(ctx):
+    if await GUILD_CONFIG.save(ctx.guild):
+        await ctx.send(btm.success_guild_settings_saved(ctx.guild))
+    else:
+        await btm.message_unexpected_error("save")
+
+
 async def aux_set_guild(ctx, settings: GuildSettings):
     guild = ctx.guild
     has_values = False
