@@ -19,7 +19,6 @@ from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
 from utils.guild_config import GUILD_CONFIG
-from utils.helper_functions import get_nick
 from utils.my_converters import GuildSettings, LabGroup
 
 # TODO: invite command
@@ -208,14 +207,14 @@ async def random_join_all_command(ctx, *args):
 """
 
 
-@bot.command(name='open', aliases=["o"], help='Open group. Anyone can join the group.', hidden=True)
+@bot.command(name='open', help='Open group. Anyone can join the group.', hidden=True)
 async def open_command(ctx, *, group: LabGroup):
     async with ctx.channel.typing():
         async with open_close_lock:
             await aux_open_group(ctx, group)
 
 
-@bot.command(name='close', aliases=["c"], help='Close group. No one can join the group.', hidden=True)
+@bot.command(name='close', help='Close group. No one can join the group.', hidden=True)
 async def close_command(ctx, *, group: LabGroup):
     async with ctx.channel.typing():
         async with open_close_lock:
@@ -252,7 +251,7 @@ async def clean_all_command(ctx):
 """
 
 
-@bot.command(name='info', aliases=["i"], help="Show group details.")
+@bot.command(name='info', help="Show group details.")
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def get_info(ctx, *, group: LabGroup):
@@ -395,11 +394,10 @@ async def set_guild_command(ctx, *, settings: GuildSettings):
 async def broadcast_command(ctx, *, message: str):
     async with ctx.channel.typing():
         guild = ctx.guild
-        general_text_channel = discord.utils.get(guild.text_channels,
-                                                 name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
-        existing_lab_groups = hpf.all_existing_lab_groups(guild)
-        await general_text_channel.send(btm.broadcast_message_from(ctx.author, message))
-        for group in existing_lab_groups:
+        general_text_channel = hpf.get_general_text_channel(guild)
+        if general_text_channel:
+            await general_text_channel.send(btm.broadcast_message_from(ctx.author, message))
+        for group in hpf.all_existing_lab_groups(guild):
             text_channel = hpf.get_lab_text_channel(guild, group.name)
             await text_channel.send(btm.broadcast_message_from(ctx.author, message))
 
@@ -415,7 +413,7 @@ async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_n
             if lab_group:
                 await ctx.send(btm.message_where_is_member(member, lab_group))
             else:
-                await ctx.send(btm.message_member_not_in_any_group(get_nick(member)))
+                await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
 
 
 @bot.command(name='roll_dice', aliases=["dice"], help='Simulates rolling dice.')
@@ -476,6 +474,7 @@ def main(argv):
             outputfile = arg
     """
     bot.run(TOKEN)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
