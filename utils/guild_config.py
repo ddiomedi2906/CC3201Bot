@@ -1,12 +1,59 @@
 import json
 from asyncio import Lock
+from collections import deque
 from collections.abc import MutableMapping
 import os
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional
 
 import discord
 
 from global_variables import DEFAULT_ENV_VALUES
+
+
+class HelpQueue():
+    def __init__(self, cached_queue: List[Tuple[int, int]]):
+        self.group_queue = deque()
+        self.map_group_to_message_id = {}
+        for group, message_id in cached_queue:
+            self.group_queue.append(group)
+            self.map_group_to_message_id[group] = message_id
+
+    def serialize(self) -> List[Tuple[int, int]]:
+        return [(group, self.map_group_to_message_id[group]) for group in list(self.group_queue)]
+
+    def index(self, idx: int) -> Optional[int]:
+        try:
+            return self.group_queue.index(idx)
+        except ValueError:
+            return None
+
+    def extract_group(self, group: int) -> Optional[int]:
+        try:
+            self.group_queue.remove(group)
+            message_id = self.map_group_to_message_id[group]
+            del self.map_group_to_message_id[group]
+            return message_id
+        except ValueError:
+            return None
+
+    def next(self) -> Tuple[Optional[int], Optional[int]]:
+        if not self.group_queue:
+            return None, None
+        next_group = self.group_queue.popleft()
+        message_id = self.map_group_to_message_id[next_group]
+        del self.map_group_to_message_id[next_group]
+        return next_group, message_id
+
+    def add(self, group: int, message_id: int) -> bool:
+        if group in self:
+            return False
+        self.group_queue.append(group)
+        self.map_group_to_message_id[group] = message_id
+        return True
+
+    def __contains__(self, next_group: int) -> bool:
+        return next_group in self.map_group_to_message_id
+
 
 class GuildDict(MutableMapping):
     """A dictionary that applies an arbitrary key-altering
