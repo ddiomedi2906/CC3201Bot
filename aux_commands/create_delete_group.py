@@ -160,7 +160,7 @@ async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool
         existing_lab_group = hpf.existing_member_lab_group(member)
         if existing_lab_group:
             members_with_groups = True
-            await ctx.send(btm.message_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
+            await ctx.send(btm.error_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     if members_with_groups:
         return None
     empty_groups = hpf.all_empty_groups(guild)

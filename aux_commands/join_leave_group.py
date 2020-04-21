@@ -22,7 +22,7 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], sh
     if GUILD_CONFIG[guild]["REQUIRE_NICKNAME"] and not member.nick:
         await ctx.send(btm.message_member_need_name_error(member))
     elif existing_lab_group:
-        await ctx.send(btm.message_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
+        await ctx.send(btm.error_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group.name))
     elif not hpf.member_in_teaching_team(member, guild) and is_closed_group(guild, new_lab_group):

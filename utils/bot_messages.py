@@ -160,7 +160,7 @@ def message_member_need_name_error(member: discord.Member) -> str:
     return f"Hey **{member.mention}**, set your nickname before joining a group."
 
 
-def message_member_already_in_group(member_name: str, group_name: str) -> str:
+def error_member_already_in_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** is already part of **{group_name}!**"
 
 
