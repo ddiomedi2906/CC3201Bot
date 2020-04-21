@@ -198,4 +198,7 @@ class GuildConfig:
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 PROJECT_CONFIG = os.path.join(PROJECT_ROOT, 'config.json')
+if not os.path.isfile(PROJECT_CONFIG):
+    with open(PROJECT_CONFIG, "w") as outJsonFile:
+        json.dump({}, outJsonFile, indent=2)
 GUILD_CONFIG = GuildConfig(PROJECT_CONFIG)
