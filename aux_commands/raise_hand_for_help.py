@@ -67,7 +67,7 @@ async def aux_raise_hand(ctx):
     if not existing_lab_group:
         await ctx.channel.send(btm.message_member_not_in_group_for_help())
     elif ctx.channel != hpf.existing_member_lab_text_channel(member):
-        await ctx.channel.send(btm.message_stay_in_your_seat_error(ctx.author, existing_lab_group.name))
+        await ctx.channel.send(btm.error_stay_in_your_seat(ctx.author, existing_lab_group))
     elif general_text_channel:
         online_team = hpf.all_teaching_team_members(ctx.author.guild)
         available_team = [member for member in online_team if not hpf.existing_member_lab_group(member)]

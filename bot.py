@@ -177,6 +177,13 @@ async def leave_command(ctx):
     async with ctx.channel.typing():
         await jlg.aux_leave_group(ctx, ctx.author)
 
+
+@bot.command(name='invite', aliases=["i"], help='Invite someone to your group.')
+@commands.has_any_role(STUDENT_ROLE_NAME)
+async def invite_command(ctx, *, member: discord.Member):
+    async with ctx.channel.typing():
+        await jlg.aux_invite_member(ctx, host_member=ctx.author, invited_member=member)
+
 """
 ####################################################################
 ################## RANDOM JOIN GROUP COMMANDS ######################

@@ -1,3 +1,4 @@
+from asyncio import Lock
 from typing import Union, List
 
 import discord
@@ -12,6 +13,8 @@ from utils import helper_functions as hpf, bot_messages as btm
 ####################################################################
 """
 
+invites_lock = Lock()
+
 
 async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], show_join_group: bool = True) -> bool:
     guild = ctx.guild
@@ -25,12 +28,22 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], sh
         await ctx.send(btm.error_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group.name))
-    elif not hpf.member_in_teaching_team(member, guild) and is_closed_group(guild, new_lab_group):
-        await ctx.send(btm.error_lab_group_is_closed(new_lab_group))
     elif len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
         await ctx.send(btm.message_max_members_in_group_error(new_lab_group.name, MAX_GROUP_SIZE))
     else:
-        await member.add_roles(new_role)
+        if not hpf.member_in_teaching_team(member, guild):
+            group_num = hpf.get_lab_group_number(new_lab_group.name)
+            async with invites_lock:
+                invite_list = GUILD_CONFIG.group_invites(guild)
+                invited = invite_list.has_invite(member.id, group_num)
+                if is_closed_group(guild, new_lab_group) and not invited:
+                    await ctx.send(btm.error_lab_group_is_closed(new_lab_group))
+                    return False
+                if invited:
+                    invite_list.remove_invite(member.id, group_num)
+                await member.add_roles(new_role)
+        else:
+            await member.add_roles(new_role)
         print(f'Role "{new_role}" assigned to {member}')
         # Move to voice channel if connected
         voice_channel = hpf.get_lab_voice_channel(guild, group)
@@ -44,6 +57,13 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], sh
         general_text_channel = hpf.get_general_text_channel(guild)
         if show_join_group and general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group.name))
+        # Remove other invitations
+        async with invites_lock:
+            invite_list = GUILD_CONFIG.group_invites(guild)
+            old_invites = invite_list.retrieve_invites(member.id)
+            for group_invite in old_invites:
+                text_channel = hpf.get_lab_text_channel(guild, group_invite)
+                await text_channel.send(btm.info_member_accepted_another_invite(member))
         return True
     return False
 
@@ -92,3 +112,30 @@ async def aux_move_to(ctx, member: discord.Member, group: int):
     else:
         await aux_leave_group(ctx, member, show_not_in_group_error=False)
         await aux_join_group(ctx, member, group)
+
+
+async def aux_invite_member(ctx, host_member: discord.Member, invited_member: discord.Member):
+    guild = ctx.guild
+    existing_lab_group = hpf.existing_member_lab_group(host_member)
+    if not existing_lab_group:
+        await ctx.send(btm.error_not_in_group_for_invite(host_member))
+    elif hpf.member_in_teaching_team(invited_member, guild):
+        await ctx.send(btm.error_can_not_invite_teaching_team())
+    else:
+        async with invites_lock:
+            group_num = hpf.get_lab_group_number(existing_lab_group.name)
+            invite_list = GUILD_CONFIG.group_invites(guild)
+            if hpf.existing_member_lab_group(invited_member):
+                await ctx.send(btm.error_member_already_in_group(invited_member.name, existing_lab_group.name))
+            elif invite_list.has_invite(invited_member.id, group_num):
+                await ctx.send(btm.error_invite_already_sent(invited_member))
+            else:
+                # Add invitation
+                invite_list.add_invite(invited_member.id, group_num)
+                general_text_channel = hpf.get_general_text_channel(guild)
+                if general_text_channel:
+                    await general_text_channel.send(
+                        btm.success_invite_sent_to_group(invited_member, existing_lab_group, group_num))
+                group_channel = hpf.get_lab_text_channel(guild, group_num)
+                if group_channel:
+                    await group_channel.send(btm.success_invite_sent(invited_member))

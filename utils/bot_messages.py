@@ -262,5 +262,37 @@ def message_no_one_online_error() -> str:
 def message_can_not_get_help_error() -> str:
     return "Sorry, I can't do that right now."
 
-def message_stay_in_your_seat_error(member: discord.Member, group_name: str) -> str:
-    return f"Please {member.mention} stay in your group! (**{group_name}**)"
+def error_stay_in_your_seat(member: discord.Member, group: discord.CategoryChannel) -> str:
+    return f"Please {member.mention} stay in your group! (**{group.name}**)"
+
+
+"""
+####################################################################
+######################### INVITE MESSAGES #########################
+####################################################################
+"""
+
+
+def error_not_in_group_for_invite(member: discord.Member) -> str:
+    return f"**{get_nick(member)}** needs to join any group for sending invitations!"
+
+
+def error_invite_already_sent(member: discord.Member) -> str:
+    return f"Invitation to **{get_nick(member)}** has already been sent!"
+
+
+def error_can_not_invite_teaching_team() -> str:
+    return "Hey! If you need help, use `!raise-hand` on your group channel :)"
+
+
+def success_invite_sent(member: discord.Member) -> str:
+    return f"Invitation sent to **{get_nick(member)}**!"
+
+
+def info_member_accepted_another_invite(member: discord.Member) -> str:
+    return f"Thanks for the invitation! But **{get_nick(member)}** has joined another group."
+
+
+def success_invite_sent_to_group(member: discord.Member, group: discord.CategoryChannel, group_num: int) -> str:
+    return f"**{member.mention}** has been invited to join **{group.name}**! Use `!join {group_num}` to accept."
+
