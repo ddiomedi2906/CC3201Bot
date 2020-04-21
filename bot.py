@@ -13,7 +13,7 @@ from discord.ext import commands
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
     random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
 from aux_commands.clean_group import aux_clean_group
-from aux_commands.init_functions import aux_init_guild
+from aux_commands.manage_guild_settings import aux_init_guild, aux_set_guild
 from aux_commands.open_close_groups import aux_open_group, aux_close_group
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
@@ -380,20 +380,7 @@ async def save_command(ctx):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def set_guild_command(ctx, *, settings: GuildSettings):
     async with ctx.channel.typing():
-        guild = ctx.guild
-        has_values = False
-        if guild not in GUILD_CONFIG:
-            await ctx.send(btm.message_default_error())
-            print(f"Guild {guild.name} is not included on config.json!")
-            return
-        print(f"Setting values on guild {guild.name}...")
-        for key, value in settings.items:
-            if value is not None:
-                has_values = True
-                GUILD_CONFIG[guild][key] = value
-                print(f"{key}: {value}")
-        if has_values:
-            await ctx.send(btm.success_guild_settings_changed(guild))
+        await aux_set_guild(ctx, settings)
 
 
 """

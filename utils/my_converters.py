@@ -29,7 +29,6 @@ class GuildSettings:
             raise commands.BadArgument(usage)
         nickname = None
         groups_size = None
-        print(opts)
         for opt, arg in opts:
             if opt == '-h':
                 raise commands.BadArgument(usage)
@@ -45,8 +44,8 @@ class GuildSettings:
         return cls(REQUIRE_NICKNAME=nickname, MAX_STUDENTS_PER_GROUP=groups_size)
 
     @property
-    def items(self):
-        return self.config.items()
+    def changed_items(self):
+        return [(key, value) for key, value in self.config.items() if value is not None]
 
 
 class LabGroup(commands.CategoryChannelConverter):
