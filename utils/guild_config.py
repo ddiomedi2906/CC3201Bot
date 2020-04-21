@@ -9,8 +9,10 @@ import discord
 
 from global_variables import DEFAULT_ENV_VALUES
 
+config_lock = Lock()
 
-class HelpQueue():
+
+class HelpQueue:
     def __init__(self, cached_queue: List[Tuple[int, int]]):
         self.group_queue = deque()
         self.map_group_to_message_id = {}
@@ -55,6 +57,37 @@ class HelpQueue():
         return next_group in self.map_group_to_message_id
 
 
+class GroupInviteList:
+    def __init__(self, cached_invitations: Dict[int, List[int]]):
+        self.invitations = {member_id: set(groups) for member_id, groups in cached_invitations.items()}
+
+    def has_invite(self, member_id: int, group: int) -> bool:
+        return member_id in self.invitations and group in self.invitations[member_id]
+
+    def add_invite(self, member_id: int, group: int):
+        if member_id not in self.invitations:
+            self.invitations[member_id] = set()
+        self.invitations[member_id].add(group)
+
+    def remove_invite(self, member_id: int, group: int):
+        if member_id in self.invitations:
+            self.invitations[member_id].remove(group)
+
+    def clear_invites(self, member_id: int):
+        if member_id in self.invitations:
+            del self.invitations[member_id]
+
+    def retrieve_invites(self, member_id: int) -> List[int]:
+        if member_id not in self.invitations:
+            return []
+        invites = list(self.invitations[member_id])
+        del self.invitations[member_id]
+        return invites
+
+    def serialize(self) -> Dict[int, List[int]]:
+        return {member_id: list(groups) for member_id, groups in self.invitations.items()}
+
+
 class GuildDict(MutableMapping):
     """A dictionary that applies an arbitrary key-altering
        function before accessing the keys"""
@@ -64,6 +97,7 @@ class GuildDict(MutableMapping):
         self.update(dict(*args, **kwargs))  # use the free update to set keys
         self["OPEN_GROUPS"] = set(self.store["OPEN_GROUPS"] if "OPEN_GROUPS" in self.store else [])
         self["CLOSED_GROUPS"] = set(self.store["CLOSED_GROUPS"] if "CLOSED_GROUPS" in self.store else [])
+        self["GROUP_INVITES"] = GroupInviteList(self.store["GROUP_INVITES"] if "GROUP_INVITES" in self.store else {})
         self["HELP_QUEUE"] = HelpQueue(self.store["HELP_QUEUE"] if "HELP_QUEUE" in self.store else [])
 
     def __getitem__(self, key):
@@ -92,13 +126,12 @@ class GuildDict(MutableMapping):
         for key, value in self.store.items():
             if type(value) == set:
                 serialized_dict[key] = list(value)
-            elif isinstance(value, HelpQueue):
+            elif isinstance(value, HelpQueue) or isinstance(value, GroupInviteList):
                 serialized_dict[key] = value.serialize()
             else:
                 serialized_dict[key] = value
         return serialized_dict
 
-config_lock = Lock()
 
 class GuildConfig:
 
@@ -124,6 +157,9 @@ class GuildConfig:
     def help_queue(self, guild: discord.Guild) -> HelpQueue:
         return self.config[guild.id]["HELP_QUEUE"]
 
+    def group_invites(self, guild: discord.Guild) -> GroupInviteList:
+        return self.config[guild.id]["GROUP_INVITES"]
+
     async def init_guild_config(self, guild: discord.Guild):
         if guild not in self:
             self.config[int(guild.id)] = GuildDict()
@@ -145,7 +181,6 @@ class GuildConfig:
                     return False
             return True
 
-
     async def save_all(self) -> bool:
         async with config_lock:
             with open(self.config_json, "w") as outJsonFile:
@@ -159,8 +194,6 @@ class GuildConfig:
                 except TypeError:
                     json.dump(self.backup_data, outJsonFile, indent=2)
             return False
-
-
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
