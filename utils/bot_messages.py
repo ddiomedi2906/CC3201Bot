@@ -140,7 +140,7 @@ def message_lab_group_not_exists(group_name: str) -> str:
 
 
 def error_lab_group_is_closed(group: discord.CategoryChannel) -> str:
-    return f"**{group.name}** is closed!"
+    return f"I can't do that, **{group.name}** is closed!"
 
 
 def message_lab_role_not_exists(role_name: str) -> str:
@@ -233,8 +233,14 @@ def message_call_for_help(group_name: str, available_members: List[discord.Membe
     members_string = ' '.join([member.mention for member in available_members]) if available_members else "Nobody available :("
     return f"**{group_name}** is calling for help. \n {members_string}"
 
+
 def message_help_on_the_way(member: discord.Member, show_mention: bool = False) -> str:
     return f"**{member.mention if show_mention else get_nick(member)}** on the way!"
+
+
+def info_on_the_way_to(member: discord.Member, group_name: str, show_mention: bool = False) -> str:
+    return f"**{member.mention if show_mention else get_nick(member)}** on the way to **{group_name}**!"
+
 
 def message_member_not_in_group_for_help() -> str:
     return f"You have to be part of a group to raise your hand. Try using `!join <number>` or `!make-group` :)"

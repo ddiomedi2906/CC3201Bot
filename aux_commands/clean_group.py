@@ -20,7 +20,7 @@ async def aux_clean_group(ctx, group: Union[int, str]):
     if category and existing_role:
         text_channels = category.text_channels
         for group_member in (existing_role.members if existing_role else []):
-            await jlg.aux_leave_group(ctx, group_member, show_not_in_group_error=False)
+            await jlg.aux_leave_group(ctx, group_member, show_open_message=False)
         for text_channel in text_channels:
             text_channel_name = text_channel.name
             print(f'Cleaning messages in text channels: ({text_channel_name})')

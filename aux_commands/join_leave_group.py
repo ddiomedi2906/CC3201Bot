@@ -48,7 +48,12 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], sh
     return False
 
 
-async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: bool = True):
+async def aux_leave_group(
+        ctx,
+        member: discord.Member,
+        show_open_message: bool = True,
+        show_not_in_group_error: bool = True
+):
     guild = ctx.guild
     existing_lab_role = hpf.existing_member_lab_role(member)
     if existing_lab_role:
@@ -73,7 +78,8 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         # If group get empty, open it
         if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1:
             await open_group(guild, existing_lab_group)
-            await general_text_channel.send(btm.success_group_open(existing_lab_group))
+            if show_open_message:
+                await general_text_channel.send(btm.success_group_open(existing_lab_group))
     elif show_not_in_group_error:
         await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
 

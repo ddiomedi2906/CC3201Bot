@@ -23,7 +23,7 @@ async def go_for_help_from_message(member: discord.Member, message: discord.Mess
         message_id = GUILD_CONFIG.help_queue(guild).extract_group(group)
     if not message_id:
         return False
-    await message.channel.send(btm.message_help_on_the_way(member))
+    await message.channel.send(btm.info_on_the_way_to(member, lab_group.name))
     text_channel = hpf.get_lab_text_channel(guild, lab_group.name)
     if text_channel:
         await text_channel.send(btm.message_help_on_the_way(member, show_mention=True))
@@ -49,7 +49,7 @@ async def aux_go_for_help_from_command(ctx, member: discord.Member) -> bool:
     try:
         message = await general_text_channel.fetch_message(message_id)
         await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
-        await general_text_channel.send(btm.message_help_on_the_way(member))
+        await general_text_channel.send(btm.info_on_the_way_to(member, hpf.get_lab_group_name(group)))
     except discord.NotFound:
         pass
     # Go for help
