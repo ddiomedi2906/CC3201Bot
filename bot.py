@@ -22,8 +22,7 @@ from utils.guild_config import GUILD_CONFIG
 from utils.helper_functions import get_nick
 from utils.my_converters import GuildSettings, LabGroup
 
-# TODO: opened and closed groups
-# TODO: queue message
+# TODO: invite command
 # TODO: set main
 # TODO: spanish messages
 bot = commands.Bot(command_prefix='!')
