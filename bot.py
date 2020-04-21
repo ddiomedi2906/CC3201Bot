@@ -40,7 +40,7 @@ open_close_lock = Lock()
 async def on_ready():
     # guild = discord.utils.find(lambda g: g.name == GUILD, client.guilds)
     # guild = discord.utils.get(bot.guilds, id=int(GUILD_ID))
-    print(f'{bot.user} is connected to the following guild:\n')
+    print(f'{bot.user} is connected to the following guild:')
     for guild in bot.guilds:
         await aux_init_guild(guild)
     bot.loop.create_task(save_all_task())
@@ -349,11 +349,11 @@ async def raise_hand(ctx):
 """
 
 
-@bot.command(name='init', help='Initialize guild settings.', hidden=True)
+@bot.command(name='init-guild', aliases=["init"], help='Initialize guild settings.', hidden=True)
 @commands.cooldown(rate=5, per=1)
 @commands.has_guild_permissions(manage_roles=True)
 @commands.bot_has_guild_permissions(manage_roles=True)
-async def init_command(ctx):
+async def init_guild_command(ctx):
     async with ctx.channel.typing():
         guild = ctx.guild
         if guild not in GUILD_CONFIG:
@@ -364,7 +364,7 @@ async def init_command(ctx):
             await ctx.send(btm.error_guild_already_init(guild))
 
 
-@bot.command(name='save', help='Save guild settings.', hidden=True)
+@bot.command(name='save-guild', aliases=["save"], help='Save guild settings.', hidden=True)
 @commands.cooldown(rate=5, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def save_command(ctx):
@@ -375,10 +375,10 @@ async def save_command(ctx):
             await btm.message_unexpected_error("save")
 
 
-@bot.command(name='set', help='Set guild\'s field.', hidden=True)
+@bot.command(name='set-guild', aliases=["set"], help='Set guild\'s field.', hidden=True)
 @commands.cooldown(rate=5, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def set_command(ctx, *, settings: GuildSettings):
+async def set_guild_command(ctx, *, settings: GuildSettings):
     async with ctx.channel.typing():
         guild = ctx.guild
         has_values = False
@@ -404,7 +404,6 @@ async def set_command(ctx, *, settings: GuildSettings):
 
 
 @bot.command(name='broadcast', help='Broadcast a message on all groups.', hidden=True)
-@commands.cooldown(rate=60, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def broadcast_command(ctx, *, message: str):
     async with ctx.channel.typing():
@@ -419,7 +418,6 @@ async def broadcast_command(ctx, *, message: str):
 
 
 @bot.command(name='whereis', aliases=["w"], help='Find members\' group.')
-@commands.cooldown(rate=60, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def where_is_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
     async with ctx.channel.typing():
