@@ -13,7 +13,7 @@ from utils import helper_functions as hpf, bot_messages as btm
 """
 
 
-async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) -> bool:
+async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], show_join_group: bool = True) -> bool:
     guild = ctx.guild
     new_role = hpf.get_lab_role(guild, group)
     new_lab_group = hpf.get_lab_group(guild, group)
@@ -38,11 +38,11 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str]) ->
             await member.move_to(voice_channel)
         # Message to group text channel
         text_channel = hpf.get_lab_text_channel(guild, group)
-        if text_channel:
+        if show_join_group and text_channel:
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group.name))
         # Message to general channel
         general_text_channel = hpf.get_general_text_channel(guild)
-        if general_text_channel and not hpf.member_in_teaching_team(member, guild):
+        if show_join_group and general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group.name))
         return True
     return False
@@ -63,12 +63,14 @@ async def aux_leave_group(ctx, member: discord.Member, show_not_in_group_error: 
         text_channel = hpf.existing_member_lab_text_channel(member)
         if text_channel:
             await text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
+        # Remove group role
         await member.remove_roles(existing_lab_role)
         print(f'Role "{existing_lab_role}" removed to {member}')
         # Message to general channel
         general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
+        # If group get empty, open it
         if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1:
             await open_group(guild, existing_lab_group)
             await general_text_channel.send(btm.success_group_open(existing_lab_group))
