@@ -62,6 +62,9 @@ class GuildDict(MutableMapping):
     def __init__(self, *args, **kwargs):
         self.store = dict()
         self.update(dict(*args, **kwargs))  # use the free update to set keys
+        self["OPEN_GROUPS"] = set(self.store["OPEN_GROUPS"] if "OPEN_GROUPS" in self.store else [])
+        self["CLOSED_GROUPS"] = set(self.store["CLOSED_GROUPS"] if "CLOSED_GROUPS" in self.store else [])
+        self["HELP_QUEUE"] = HelpQueue(self.store["HELP_QUEUE"] if "HELP_QUEUE" in self.store else [])
 
     def __getitem__(self, key):
         key = self.__keytransform__(key)
@@ -84,6 +87,17 @@ class GuildDict(MutableMapping):
     def __keytransform__(self, key):
         return key
 
+    def serialize(self) -> Dict:
+        serialized_dict = {}
+        for key, value in self.store.items():
+            if type(value) == set:
+                serialized_dict[key] = list(value)
+            elif isinstance(value, HelpQueue):
+                serialized_dict[key] = value.serialize()
+            else:
+                serialized_dict[key] = value
+        return serialized_dict
+
 config_lock = Lock()
 
 class GuildConfig:
@@ -96,14 +110,6 @@ class GuildConfig:
         self.config = {}
         for guild_id, values in data.items():
             self.config[int(guild_id)] = GuildDict(values.items())
-            if "OPEN_GROUPS" not in self.config[int(guild_id)]:
-                self.config[int(guild_id)]["OPEN_GROUPS"] = set()
-            else:
-                self.config[int(guild_id)]["OPEN_GROUPS"] = set(self.config[int(guild_id)]["OPEN_GROUPS"])
-            if "CLOSED_GROUPS" not in self.config[int(guild_id)]:
-                self.config[int(guild_id)]["CLOSED_GROUPS"] = set()
-            else:
-                self.config[int(guild_id)]["CLOSED_GROUPS"] = set(self.config[int(guild_id)]["CLOSED_GROUPS"])
 
     @property
     def guilds(self) -> List[int]:
@@ -115,11 +121,8 @@ class GuildConfig:
     def __contains__(self, guild: discord.Guild) -> bool:
         return guild.id in self.config
 
-    def _serialize_guild_dict(self, guild_dict: GuildDict) -> Dict:
-        serialized_dict = {}
-        for key, value in guild_dict.items():
-            serialized_dict[key] = list(value) if type(value) == set else value
-        return serialized_dict
+    def help_queue(self, guild: discord.Guild) -> HelpQueue:
+        return self.config[guild.id]["HELP_QUEUE"]
 
     async def init_guild_config(self, guild: discord.Guild):
         if guild not in self:
@@ -133,7 +136,7 @@ class GuildConfig:
                     data = json.load(inJsonFile)
             except IOError:
                 return False
-            data[str(guild.id)] = self._serialize_guild_dict(self.config[guild.id])
+            data[str(guild.id)] = self.config[guild.id].serialize()
             with open(self.config_json, "w") as outJsonFile:
                 try:
                     json.dump(data, outJsonFile, indent=2)
@@ -148,7 +151,7 @@ class GuildConfig:
             with open(self.config_json, "w") as outJsonFile:
                 serialized_guild_config = {}
                 for guild_id, guild_dict in self.config.items():
-                    serialized_guild_config[guild_id] = self._serialize_guild_dict(guild_dict)
+                    serialized_guild_config[guild_id] = self.config[guild_id].serialize()
                 try:
                     json.dump(serialized_guild_config, outJsonFile, indent=2)
                     self.backup_data = serialized_guild_config
