@@ -1,3 +1,4 @@
+import asyncio
 from asyncio import Lock
 from typing import Union, List
 
@@ -16,7 +17,13 @@ from utils import helper_functions as hpf, bot_messages as btm
 invites_lock = Lock()
 
 
-async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], show_join_group: bool = True) -> bool:
+async def aux_join_group(
+        ctx,
+        member: discord.Member,
+        group: Union[int, str],
+        group_message: bool = True,
+        general_message: bool = True
+) -> bool:
     guild = ctx.guild
     new_role = hpf.get_lab_role(guild, group)
     new_lab_group = hpf.get_lab_group(guild, group)
@@ -51,11 +58,11 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], sh
             await member.move_to(voice_channel)
         # Message to group text channel
         text_channel = hpf.get_lab_text_channel(guild, group)
-        if show_join_group and text_channel:
+        if group_message and text_channel:
             await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group.name))
         # Message to general channel
         general_text_channel = hpf.get_general_text_channel(guild)
-        if show_join_group and general_text_channel and not hpf.member_in_teaching_team(member, guild):
+        if general_message and general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group.name))
         # Remove other invitations
         async with invites_lock:
@@ -71,6 +78,8 @@ async def aux_join_group(ctx, member: discord.Member, group: Union[int, str], sh
 async def aux_leave_group(
         ctx,
         member: discord.Member,
+        group_message: bool = True,
+        general_message: bool = True,
         show_open_message: bool = True,
         show_not_in_group_error: bool = True
 ):
@@ -86,17 +95,17 @@ async def aux_leave_group(
             await member.move_to(general_voice_channel if hpf.member_in_teaching_team(member, guild) else None)
         # Message to group text channel
         text_channel = hpf.existing_member_lab_text_channel(member)
-        if text_channel:
+        if group_message and text_channel:
             await text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
         # Remove group role
         await member.remove_roles(existing_lab_role)
         print(f'Role "{existing_lab_role}" removed to {member}')
         # Message to general channel
         general_text_channel = hpf.get_general_text_channel(guild)
-        if general_text_channel and not hpf.member_in_teaching_team(member, guild):
+        if general_message and general_text_channel and not hpf.member_in_teaching_team(member, guild):
             await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
         # If group get empty, open it
-        if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1:
+        if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1 and is_closed_group(guild, existing_lab_group):
             await open_group(guild, existing_lab_group)
             if show_open_message:
                 await general_text_channel.send(btm.success_group_open(existing_lab_group))
@@ -110,8 +119,10 @@ async def aux_move_to(ctx, member: discord.Member, group: int):
         await ctx.send(
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group), MAX_GROUP_SIZE))
     else:
-        await aux_leave_group(ctx, member, show_not_in_group_error=False)
-        await aux_join_group(ctx, member, group)
+        await aux_leave_group(ctx, member, show_not_in_group_error=False, general_message=False)
+        await asyncio.sleep(1)
+        if await aux_join_group(ctx, member, group, general_message=False):
+            await ctx.send(btm.message_member_moved(member, hpf.get_lab_group_name(group)))
 
 
 async def aux_invite_member(ctx, host_member: discord.Member, invited_member: discord.Member):

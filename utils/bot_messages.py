@@ -83,6 +83,10 @@ def message_member_left_group(member_name: str, group_name: str) -> str:
     return f"**{member_name}** has left **{group_name}!**"
 
 
+def message_member_moved(member: discord.Member, group_name: str) -> str:
+    return f"**{get_nick(member)}** has moved to **{group_name}!**"
+
+
 def message_allow_to_success(p_masks: List[str], role: discord.Role, lab_group: discord.CategoryChannel) -> str:
     return f"Permission{'s ' if len(p_masks) > 1 else ' '}**{'|'.join(p_masks)}** allowed for **{role}** in **{lab_group}**"
 

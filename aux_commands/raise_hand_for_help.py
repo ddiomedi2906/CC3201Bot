@@ -56,7 +56,7 @@ async def aux_go_for_help_from_command(ctx, member: discord.Member) -> bool:
     group_text_channel = hpf.get_lab_text_channel(guild, group)
     if group_text_channel:
         await group_text_channel.send(btm.message_help_on_the_way(member, show_mention=True))
-    await aux_join_group(ctx, member, group, show_join_group=False)
+    await aux_join_group(ctx, member, group, group_message=False)
     return True
 
 
