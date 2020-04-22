@@ -172,7 +172,6 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Union[int,
 
 
 @bot.command(name='join', aliases=["j"], help='Join to a group. Need to provide the group number.')
-@commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def join_command(ctx, group: Union[int, str]):
