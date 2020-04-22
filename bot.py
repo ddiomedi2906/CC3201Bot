@@ -27,7 +27,6 @@ from utils.my_converters import GuildSettings, LabGroup
 # TODO: spanish messages
 bot = commands.Bot(command_prefix='!')
 join_make_group_lock = Lock()
-open_close_lock = Lock()
 
 """
 ####################################################################
@@ -227,16 +226,14 @@ async def random_join_all_command(ctx, *args):
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def open_command(ctx, *, group: Optional[LabGroup]):
     async with ctx.channel.typing():
-        async with open_close_lock:
-            await aux_open_group(ctx, group)
+        await aux_open_group(ctx, group)
 
 
 @bot.command(name='close', help='Close group. No one can join the group.', hidden=True)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def close_command(ctx, *, group: Optional[LabGroup]):
     async with ctx.channel.typing():
-        async with open_close_lock:
-            await aux_close_group(ctx, group)
+        await aux_close_group(ctx, group)
 
 
 """
