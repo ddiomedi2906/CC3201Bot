@@ -149,7 +149,11 @@ def message_lab_group_not_exists(group_name: str) -> str:
 
 
 def error_lab_group_is_closed(group: discord.CategoryChannel) -> str:
-    return f"I can't do that, **{group.name}** is closed!"
+    return f"Invitation required to join **{group.name}**!"
+
+
+def error_someone_try_to_enter(member: discord.Member) -> str:
+    return f"**{get_nick(member)}** tried to join this group but it's closed. May you send an invitation?"
 
 
 def message_lab_role_not_exists(role_name: str) -> str:

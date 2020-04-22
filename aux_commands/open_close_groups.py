@@ -55,13 +55,14 @@ async def aux_remove_group(guild: discord.Guild, group: discord.CategoryChannel)
 async def aux_open_group(ctx, group: Optional[discord.CategoryChannel]):
     guild = ctx.guild
     member_group = hpf.existing_member_lab_group(ctx.author)
-    if not member_group:
+    is_in_teaching_team = hpf.member_in_teaching_team(ctx.author, guild)
+    if not member_group and not is_in_teaching_team:
         await ctx.send(btm.message_member_not_in_any_group(ctx.author))
-    elif group and (not (hpf.member_in_teaching_team(ctx.author, guild) or group == member_group)):
+    elif group and (not (is_in_teaching_team or group == member_group)):
         await ctx.send(btm.error_member_not_part_of_group(ctx.author, group if group else member_group))
     else:
         group_to_be_open = group if group else member_group
-        await open_group(guild, member_group)
+        await open_group(guild, group_to_be_open)
         general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel:
             await general_text_channel.send(btm.success_group_open(group_to_be_open))
@@ -72,9 +73,10 @@ async def aux_open_group(ctx, group: Optional[discord.CategoryChannel]):
 async def aux_close_group(ctx, group: Optional[discord.CategoryChannel]):
     guild = ctx.guild
     member_group = hpf.existing_member_lab_group(ctx.author)
-    if not member_group:
+    is_in_teaching_team = hpf.member_in_teaching_team(ctx.author, guild)
+    if not member_group and not is_in_teaching_team:
         await ctx.send(btm.message_member_not_in_any_group(ctx.author))
-    elif group and (not (hpf.member_in_teaching_team(ctx.author, guild) or group == member_group)):
+    elif group and (not (is_in_teaching_team or group == member_group)):
         await ctx.send(btm.error_member_not_part_of_group(ctx.author, group if group else member_group))
     else:
         group_to_be_closed = group if group else member_group

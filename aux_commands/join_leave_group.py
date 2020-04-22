@@ -44,6 +44,9 @@ async def aux_join_group(
                 invite_list = GUILD_CONFIG.group_invites(guild)
                 invited = invite_list.has_invite(member.id, group_num)
                 if is_closed_group(guild, new_lab_group) and not invited:
+                    text_channel = hpf.get_lab_text_channel(guild, group)
+                    if text_channel:
+                        await text_channel.send(btm.error_someone_try_to_enter(member))
                     await ctx.send(btm.error_lab_group_is_closed(new_lab_group))
                     return False
                 if invited:
