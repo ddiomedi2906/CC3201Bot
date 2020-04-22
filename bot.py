@@ -22,7 +22,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 from utils.guild_config import GUILD_CONFIG
 from utils.my_converters import GuildSettings, LabGroup
 
-# TODO: invite command
 # TODO: set main
 # TODO: spanish messages
 bot = commands.Bot(command_prefix='!')
@@ -53,6 +52,7 @@ async def on_member_join(member):
     role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     await member.add_roles(role)
     print(f'Role "{role}" assigned to {member}')
+    await aux_salute(member, None)
     
 
 @bot.event
@@ -90,6 +90,8 @@ async def on_command_error(ctx, error):
         await ctx.send(error)
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(error)
+    else:
+        await ctx.send(btm.message_default_error())
     print(error)
     # await ctx.send('You do not have the correct role for this command.')
 
@@ -125,7 +127,7 @@ async def delete_group(ctx, group: Union[int, str]):
         await cdg.aux_delete_group(ctx, group)
 
 
-@bot.command(name='delete-all-groups', aliases=["dlg"], help='Delete all lab groups.', hidden=True)
+@bot.command(name='delete-all-groups', help='Delete all lab groups.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def delete_all_groups(ctx):
@@ -259,7 +261,7 @@ async def clean_all_command(ctx):
 """
 
 
-@bot.command(name='info', help="Show group details.")
+@bot.command(name='details', help="Show group details.")
 @commands.cooldown(rate=1, per=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def get_info(ctx, *, group: LabGroup):
@@ -332,6 +334,7 @@ async def deny_all(ctx, *args):
 ##################### CALL-FOR-HELP COMMANDS #######################
 ####################################################################
 """
+
 
 @bot.command(name='go', aliases=['fly'], help='Go to the next group that has asked for help.')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
@@ -419,10 +422,10 @@ async def roll(ctx, number_of_dice: int = 1, number_of_sides: int = 6):
 
 
 @bot.command(name='salute', help='Say hello to this friendly bot.')
-@commands.cooldown(rate=10, per=1)
+@commands.cooldown(rate=1, per=1)
 async def salute(ctx):
     async with ctx.channel.typing():
-        await aux_salute(ctx)
+        await aux_salute(ctx.author, ctx.channel)
 
 """
 ####################################################################

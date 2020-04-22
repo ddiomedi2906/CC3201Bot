@@ -27,12 +27,13 @@ async def aux_whereis(ctx, members: List[discord.Member], invalid_name: Optional
             await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
 
 
-async def aux_salute(ctx):
-    guild = ctx.author.guild
-    author = ctx.author
-    await ctx.send(get_unicode_emoji_from_alias('wave'))
+async def aux_salute(author: discord.Member, text_channel: Optional[discord.TextChannel] = None):
+    guild = author.guild
+    author = author
+    if text_channel:
+        await text_channel.send(get_unicode_emoji_from_alias('wave'))
     await author.create_dm()
-    if ctx.author.nick:
+    if author.nick:
         await author.dm_channel.send(btm.info_welcome_to_guild(author, guild))
     else:
         await author.dm_channel.send(btm.error_member_need_name_in_guild(author, guild))
