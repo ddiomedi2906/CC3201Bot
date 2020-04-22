@@ -180,3 +180,13 @@ def get_general_text_channel(guild: discord.Guild) -> Optional[discord.TextChann
 
 def get_general_voice_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
     return discord.utils.get(guild.voice_channels, name=GUILD_CONFIG[guild]["GENERAL_VOICE_CHANNEL_NAME"])
+
+
+def get_excluded_groups(*args) -> List[int]:
+    excluded_groups: List[int] = []
+    for arg in args:
+        try:
+            excluded_groups.append(int(arg))
+        except ValueError:
+            continue
+    return excluded_groups

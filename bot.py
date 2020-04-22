@@ -258,9 +258,12 @@ async def clean_command(ctx, group: Union[int, str]):
 @bot.command(name='clean-all', help='Clean all groups messages.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def clean_all_command(ctx):
+async def clean_all_command(ctx, *args):
     async with ctx.channel.typing():
-        for group in sorted(hpf.all_existing_lab_groups(ctx.guild), key=lambda c: c.name, reverse=False):
+        excluded_groups = hpf.get_excluded_groups(*args)
+        groups_to_be_cleaned = [group for group in hpf.all_existing_lab_groups(ctx.guild)
+                                if hpf.get_lab_group_number(group.name) not in excluded_groups]
+        for group in sorted(groups_to_be_cleaned, key=lambda c: c.name, reverse=False):
             await aux_clean_group(ctx, group.name)
 
 """

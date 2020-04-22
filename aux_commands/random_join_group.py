@@ -1,5 +1,5 @@
 import random
-from typing import List, Optional
+from typing import List
 
 import discord
 
@@ -36,19 +36,9 @@ async def random_assignment(ctx, member: discord.Member, available_existing_grou
     return available_existing_groups
 
 
-def get_excluded_groups(*args) -> Optional[List[int]]:
-    excluded_groups: List[int] = []
-    for arg in args:
-        try:
-            excluded_groups.append(int(arg))
-        except ValueError:
-            return None
-    return excluded_groups
-
-
 async def aux_random_join(ctx, member_mention: discord.Member, *args):
     member = discord.utils.get(ctx.message.mentions, name=member_mention.name)
-    excluded_groups = get_excluded_groups(*args)
+    excluded_groups = hpf.get_excluded_groups(*args)
     if not member:
         await ctx.send(btm.message_member_not_exists(member_mention.nick))
     elif not excluded_groups:
@@ -64,7 +54,7 @@ async def aux_random_join(ctx, member_mention: discord.Member, *args):
 
 async def aux_random_join_all(ctx, *args):
     # Get excluded groups
-    excluded_groups = get_excluded_groups(*args)
+    excluded_groups = hpf.get_excluded_groups(*args)
     if not excluded_groups:
         await ctx.send("All extra arguments should be integers!")
         return
