@@ -20,7 +20,7 @@ def message_welcome_group(category_name: str) -> str:
 
 
 def info_welcome_to_guild(member: discord.Member, guild: discord.Guild) -> str:
-    return f'Hi {get_nick(member)}, welcome to {guild.name}!'
+    return f'Hey **{get_nick(member)}**, welcome to **{guild.name}**!'
 
 
 def info_group_details(members: List[discord.Member], group: discord.CategoryChannel, is_open: bool) -> str:
@@ -169,8 +169,8 @@ def message_member_need_name_error(member: discord.Member) -> str:
 
 
 def error_member_need_name_in_guild(member: discord.Member, guild: discord.Guild) -> str:
-    return f"Welcome **{member.mention}**! Remember to set your nickname in {guild.name} " \
-           "(it has to be **different** to your username)."
+    return f"Welcome **{member.mention}**! Remember to set your nickname in **{guild.name}** " \
+           "(it has to be **different** from your username)."
 
 
 def error_member_already_in_group(member_name: str, group_name: str) -> str:
