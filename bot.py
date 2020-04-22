@@ -24,7 +24,6 @@ from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_em
 from utils.guild_config import GUILD_CONFIG
 from utils.my_converters import GuildSettings, LabGroup
 
-# TODO: set main
 # TODO: spanish messages
 bot = commands.Bot(command_prefix='!')
 join_make_group_lock = Lock()
@@ -464,21 +463,7 @@ async def save_all_task():
 """
 
 def main(argv):
-    """
-    try:
-        opts, args = getopt.getopt(argv, "hi:o:", ["envpath=", "lang="])
-    except getopt.GetoptError:
-        print('test.py -i <inputfile> -o <outputfile>')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print('test.py -i <inputfile> -o <outputfile>')
-            sys.exit()
-        elif opt in ("-i", "--ifile"):
-            inputfile = arg
-        elif opt in ("-o", "--ofile"):
-            outputfile = arg
-    """
+    print(argv)
     bot.run(TOKEN)
 
 
