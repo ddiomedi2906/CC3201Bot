@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # bot.py
 import asyncio
 import re
@@ -39,11 +41,16 @@ open_close_lock = Lock()
 async def on_ready():
     # guild = discord.utils.find(lambda g: g.name == GUILD, client.guilds)
     # guild = discord.utils.get(bot.guilds, id=int(GUILD_ID))
-    print(f'{bot.user} is connected to the following guild:')
-    for guild in bot.guilds:
-        await aux_init_guild(guild)
-    bot.loop.create_task(save_all_task())
-    print("Ready to roll!")
+    try:
+        print(f'{bot.user} is connected to the following guild:')
+        for guild in bot.guilds:
+            await aux_init_guild(guild)
+        bot.loop.create_task(save_all_task())
+        print("Ready to roll!")
+    except UnicodeEncodeError as e:
+        print(e)
+        print("export PYTHONIOENCODING=utf-8")
+        sys.exit(2)
 
 
 @bot.event
@@ -415,7 +422,7 @@ async def where_is_command(ctx, members: commands.Greedy[discord.Member], invali
 
 @bot.command(name='roll_dice', aliases=["dice"], help='Simulates rolling dice.')
 @commands.cooldown(rate=1, per=1)
-async def roll(ctx, number_of_dice: int = 1, number_of_sides: int = 6):
+async def roll(ctx, number_of_sides: int = 6, number_of_dice: int = 1):
     dice = [
         str(random.choice(range(number_of_sides)) + 1)
         for _ in range(number_of_dice)
