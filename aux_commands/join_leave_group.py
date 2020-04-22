@@ -110,7 +110,7 @@ async def aux_leave_group(
             if show_open_message:
                 await general_text_channel.send(btm.success_group_open(existing_lab_group))
     elif show_not_in_group_error:
-        await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
+        await ctx.send(btm.message_member_not_in_any_group(member))
 
 
 async def aux_move_to(ctx, member: discord.Member, group: int):

@@ -24,7 +24,7 @@ async def aux_whereis(ctx, members: List[discord.Member], invalid_name: Optional
         if lab_group:
             await ctx.send(btm.message_where_is_member(member, lab_group))
         else:
-            await ctx.send(btm.message_member_not_in_any_group(hpf.get_nick(member)))
+            await ctx.send(btm.message_member_not_in_any_group(member))
 
 
 async def aux_salute(author: discord.Member, text_channel: Optional[discord.TextChannel] = None):

@@ -1,5 +1,5 @@
 from asyncio import Lock
-from typing import List
+from typing import List, Optional
 
 import discord
 
@@ -52,27 +52,35 @@ async def aux_remove_group(guild: discord.Guild, group: discord.CategoryChannel)
             GUILD_CONFIG[guild]["OPEN_GROUPS"].remove(group.name)
 
 
-async def aux_open_group(ctx, group: discord.CategoryChannel):
+async def aux_open_group(ctx, group: Optional[discord.CategoryChannel]):
     guild = ctx.guild
-    if not (hpf.member_in_teaching_team(ctx.author, guild) or group == hpf.existing_member_lab_group(ctx.author)):
-        await ctx.send(btm.error_member_not_part_of_group(ctx.author, group))
+    member_group = hpf.existing_member_lab_group(ctx.author)
+    if not member_group:
+        await ctx.send(btm.message_member_not_in_any_group(ctx.author))
+    elif group and (not (hpf.member_in_teaching_team(ctx.author, guild) or group == member_group)):
+        await ctx.send(btm.error_member_not_part_of_group(ctx.author, group if group else member_group))
     else:
-        await open_group(guild, group)
+        group_to_be_open = group if group else member_group
+        await open_group(guild, member_group)
         general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel:
-            await general_text_channel.send(btm.success_group_open(group))
+            await general_text_channel.send(btm.success_group_open(group_to_be_open))
         print("OPEN_GROUPS", GUILD_CONFIG[guild]["OPEN_GROUPS"])
         print("CLOSED_GROUPS", GUILD_CONFIG[guild]["CLOSED_GROUPS"])
 
 
-async def aux_close_group(ctx, group: discord.CategoryChannel):
+async def aux_close_group(ctx, group: Optional[discord.CategoryChannel]):
     guild = ctx.guild
-    if not (hpf.member_in_teaching_team(ctx.author, guild) or group == hpf.existing_member_lab_group(ctx.author)):
-        await ctx.send(btm.error_member_not_part_of_group(ctx.author, group))
+    member_group = hpf.existing_member_lab_group(ctx.author)
+    if not member_group:
+        await ctx.send(btm.message_member_not_in_any_group(ctx.author))
+    elif group and (not (hpf.member_in_teaching_team(ctx.author, guild) or group == member_group)):
+        await ctx.send(btm.error_member_not_part_of_group(ctx.author, group if group else member_group))
     else:
-        await close_group(guild, group)
+        group_to_be_closed = group if group else member_group
+        await close_group(guild, group_to_be_closed)
         general_text_channel = hpf.get_general_text_channel(guild)
         if general_text_channel:
-            await general_text_channel.send(btm.success_group_closed(group))
+            await general_text_channel.send(btm.success_group_closed(group_to_be_closed))
         print("OPEN_GROUPS", GUILD_CONFIG[ctx.guild]["OPEN_GROUPS"])
         print("CLOSED_GROUPS", GUILD_CONFIG[ctx.guild]["CLOSED_GROUPS"])
