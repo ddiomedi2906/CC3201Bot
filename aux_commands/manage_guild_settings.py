@@ -58,4 +58,4 @@ async def aux_set_guild(ctx, settings: GuildSettings):
         await ctx.send(btm.success_guild_settings_changed(guild, settings.changed_items))
     else:
         unchanged_values = [(key, GUILD_CONFIG[guild][key]) for key, _ in settings.unchanged_items]
-        await ctx.send(btm.success_guild_settings_changed(guild, unchanged_values))
+        await ctx.send(btm.info_guild_settings(guild, unchanged_values))

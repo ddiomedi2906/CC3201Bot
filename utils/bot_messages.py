@@ -22,8 +22,8 @@ def message_welcome_group(category_name: str) -> str:
 def info_welcome_to_guild(member: discord.Member, guild: discord.Guild) -> str:
     return f'Hey **{get_nick(member)}**, welcome to **{guild.name}**!'
 
-def info_guild_settings(guild: discord.Guild, changes: List[Tuple[str, Any]]) -> str:
-    changes_list = "\n".join([f" - {key} = {value}" for key, value in changes])
+def info_guild_settings(guild: discord.Guild, settings: List[Tuple[str, Any]]) -> str:
+    changes_list = "\n".join([f" - {key} = {value}" for key, value in settings])
     return f"**{guild.name}** actual settings: ```{changes_list}```"
 
 
