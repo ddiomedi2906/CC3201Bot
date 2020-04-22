@@ -31,7 +31,7 @@ class GuildSettings:
         groups_size = None
         for opt, arg in opts:
             if opt == '-h':
-                raise commands.BadArgument(usage)
+                break
             elif opt in ("-n", "--require_nickname"):
                 nickname = convert_bool(arg)
                 if nickname is None:
@@ -46,6 +46,10 @@ class GuildSettings:
     @property
     def changed_items(self):
         return [(key, value) for key, value in self.config.items() if value is not None]
+
+    @property
+    def unchanged_items(self):
+        return [(key, value) for key, value in self.config.items() if value is None]
 
 
 class LabGroup(commands.CategoryChannelConverter):

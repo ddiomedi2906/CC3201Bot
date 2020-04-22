@@ -22,9 +22,13 @@ def message_welcome_group(category_name: str) -> str:
 def info_welcome_to_guild(member: discord.Member, guild: discord.Guild) -> str:
     return f'Hey **{get_nick(member)}**, welcome to **{guild.name}**!'
 
+def info_guild_settings(guild: discord.Guild, changes: List[Tuple[str, Any]]) -> str:
+    changes_list = "\n".join([f" - {key} = {value}" for key, value in changes])
+    return f"**{guild.name}** actual settings: ```{changes_list}```"
+
 
 def info_group_details(members: List[discord.Member], group: discord.CategoryChannel, is_open: bool) -> str:
-    member_list = '\n - '.join([get_nick(member) for member in members]) if members else info_list_no_members()
+    member_list = '\n'.join([f" - {get_nick(member)}" for member in members]) if members else info_list_no_members()
     return f"**{group.name}** ({'Open' if is_open else 'Closed'})\n```{member_list}```"
 
 
@@ -114,7 +118,7 @@ def success_guild_settings_saved(guild: discord.Guild) -> str:
 
 
 def success_guild_settings_changed(guild: discord.Guild, changes: List[Tuple[str, Any]]) -> str:
-    changes_list = "\n - ".join([f"{key} = {value}" for key, value in changes])
+    changes_list = "\n".join([f" - {key} = {value}" for key, value in changes])
     return f"**{guild.name}** settings changed successfully! ```{changes_list}```"
 
 """
@@ -242,7 +246,7 @@ def get_emoji_group(number: int, letter: str = 'g') -> str:
     return f"{aux_map_letter_to_emoji(letter)} {' '.join(L)}"
 
 def message_list_group_members(group: int, members: List) -> str:
-    member_list = '\n - '.join([get_nick(member) for member in members])
+    member_list = '\n'.join([f" - {get_nick(member)}" for member in members])
     return f"{get_emoji_group(group)}```{member_list}```"
 
 """
