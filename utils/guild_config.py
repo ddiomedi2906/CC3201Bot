@@ -20,6 +20,9 @@ class HelpQueue:
             self.group_queue.append(group)
             self.map_group_to_message_id[group] = message_id
 
+    def size(self) -> int:
+        return len(self.group_queue)
+
     def serialize(self) -> List[Tuple[int, int]]:
         return [(group, self.map_group_to_message_id[group]) for group in list(self.group_queue)]
 

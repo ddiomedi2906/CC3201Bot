@@ -267,7 +267,10 @@ def message_asking_for_help() -> str:
     return f"Sure, I will bring someone."
 
 def message_no_one_available_error() -> str:
-    return f"Hey! No one is available for the moment. Please stay on the line :)"
+    return f"No one is available for the moment. Please stay on the line :)"
+
+def info_help_queue_size(size: int) -> str:
+    return f"There are {size} group{'s' if size > 1 else ''} waiting before yours."
 
 def message_no_one_online_error() -> str:
     return f"No one is online :("

@@ -69,6 +69,15 @@ async def aux_raise_hand(ctx):
     elif ctx.channel != hpf.existing_member_lab_text_channel(member):
         await ctx.channel.send(btm.error_stay_in_your_seat(ctx.author, existing_lab_group))
     elif general_text_channel:
+        group_num = hpf.get_lab_group_number(existing_lab_group.name)
+        # Check if group already asked for help
+        async with help_queue_lock:
+            help_queue = GUILD_CONFIG.help_queue(ctx.guild)
+            queue_size = help_queue.size()
+            if group_num in help_queue:
+                await ctx.channel.send(btm.info_help_queue_size(queue_size - 1) if queue_size > 1 else ":eyes:")
+                return
+        # Get help
         online_team = hpf.all_teaching_team_members(ctx.author.guild)
         available_team = [member for member in online_team if not hpf.existing_member_lab_group(member)]
         help_message = None
@@ -84,7 +93,8 @@ async def aux_raise_hand(ctx):
             await ctx.channel.send(btm.message_no_one_online_error())
         if help_message:
             async with help_queue_lock:
-                GUILD_CONFIG.help_queue(ctx.guild).add(group=hpf.get_lab_group_number(existing_lab_group.name),
-                                                       message_id=help_message.id)
+                if queue_size > 0:
+                    await ctx.channel.send(btm.info_help_queue_size(queue_size))
+                help_queue.add(group=group_num, message_id=help_message.id)
     else:
         await ctx.channel.send(btm.message_can_not_get_help_error())
