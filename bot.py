@@ -143,7 +143,7 @@ async def delete_all_groups(ctx):
             await cdg.aux_delete_group(ctx, group.name)
 
 
-@bot.command(name='make-group', aliases=["mkg", "group"], help='Make a group with the given members.', hidden=True)
+@bot.command(name='make-group', aliases=["mkg", "group"], help='Make a group with the given members.')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def make_group_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
