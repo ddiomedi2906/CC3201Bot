@@ -71,11 +71,12 @@ async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member
         if bot.user in await reaction.users().flatten():
             return
         success = False
-        if hpf.member_in_teaching_team(user, guild) and hpf.existing_member_lab_role(user) is None:
-            success = await rhh.go_for_help_from_message(user, message, group=hpf.get_lab_group_number(message.content))
+        # TODO: remove from previous group
+        if hpf.member_in_teaching_team(user, guild):
+            success = await rhh.go_for_help_from_message(bot.get_context(message), user, message, group=hpf.get_lab_group_number(message.content))
         if not success:
             await message.remove_reaction(reaction, message.author)
-    elif message.author == bot.user:
+    elif message.author == bot.user and get_unicode_emoji_from_alias('thumbsup') not in message.reactions:
         if same_emoji(emoji, 'slight_smile'):
             await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
             await message.channel.send(emoji)
