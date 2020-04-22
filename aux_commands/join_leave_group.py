@@ -35,7 +35,7 @@ async def aux_join_group(
         await ctx.send(btm.error_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group.name))
-    elif len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    elif not hpf.member_in_teaching_team(member, guild) and len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
         await ctx.send(btm.message_max_members_in_group_error(new_lab_group.name, MAX_GROUP_SIZE))
     else:
         if not hpf.member_in_teaching_team(member, guild):
