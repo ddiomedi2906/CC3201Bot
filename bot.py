@@ -74,7 +74,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member
             success = await rhh.go_for_help_from_message(bot.get_context(message), user, message, group=hpf.get_lab_group_number(message.content))
         if not success:
             await message.remove_reaction(reaction, message.author)
-    elif message.author == bot.user and get_unicode_emoji_from_alias('thumbsup') not in message.reactions:
+    elif message.author == bot.user and len(message.reactions) <= 1:
         if same_emoji(emoji, 'slight_smile'):
             await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
             await message.channel.send(emoji)
@@ -165,7 +165,7 @@ async def make_group_command(ctx, members: commands.Greedy[discord.Member], name
 @bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
-async def move_to_command(ctx, member_mention: discord.Member, group: Union[int, str]):
+async def move_to_command(ctx, member_mention: discord.Member, group: Optional[Union[int, str]] = None):
     async with ctx.channel.typing():
         await jlg.aux_move_to(ctx, member_mention, group)
 

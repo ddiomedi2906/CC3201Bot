@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import Lock
-from typing import Union, List
+from typing import Union, Optional
 
 import discord
 
@@ -116,15 +116,15 @@ async def aux_leave_group(
         await ctx.send(btm.message_member_not_in_any_group(member))
 
 
-async def aux_move_to(ctx, member: discord.Member, group: int):
+async def aux_move_to(ctx, member: discord.Member, group: Optional[int]):
     MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
-    if len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    if group and len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
         await ctx.send(
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group), MAX_GROUP_SIZE))
     else:
-        await aux_leave_group(ctx, member, show_not_in_group_error=False, general_message=False)
+        await aux_leave_group(ctx, member, show_not_in_group_error=False, general_message=group is None)
         await asyncio.sleep(1)
-        if await aux_join_group(ctx, member, group, general_message=False):
+        if group and await aux_join_group(ctx, member, group, general_message=False):
             await ctx.send(btm.message_member_moved(member, hpf.get_lab_group_name(group)))
 
 
