@@ -93,8 +93,7 @@ def all_empty_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
     return list(all_groups - non_empty_groups)
 
 
-def all_students_in_group(ctx, group: Union[int, str]) -> List[discord.Member]:
-    guild = ctx.guild
+def all_students_in_group(guild: discord.Guild, group: Union[int, str]) -> List[discord.Member]:
     existing_role = get_lab_role(guild, group)
     student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
     if not existing_role:

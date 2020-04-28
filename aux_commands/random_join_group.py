@@ -23,7 +23,7 @@ async def random_assignment(ctx, member: discord.Member, available_existing_grou
     while len(available_existing_groups) > 0:
         random_lab_group = random.choice(available_existing_groups)
         random_group = hpf.get_lab_group_number(random_lab_group.name)
-        if random_group and len(hpf.all_students_in_group(ctx, random_group)) < MAX_GROUP_SIZE:
+        if random_group and len(hpf.all_students_in_group(ctx.guild, random_group)) < MAX_GROUP_SIZE:
             success = await aux_join_group(ctx, member, random_group)
             if success:
                 return available_existing_groups

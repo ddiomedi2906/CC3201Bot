@@ -14,7 +14,7 @@ def aux_group_details(
         none_if_empty: bool = False
 ) -> Optional[str]:
     guild = ctx.guild
-    members = hpf.all_students_in_group(ctx, group.name)
+    members = hpf.all_students_in_group(guild, group.name)
     if not members and none_if_empty:
         return None
     if details:

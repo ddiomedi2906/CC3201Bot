@@ -86,7 +86,7 @@ async def aux_join_group(
         await ctx.send(btm.error_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group.name))
-    elif not hpf.member_in_teaching_team(member, guild) and len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    elif not hpf.member_in_teaching_team(member, guild) and len(hpf.all_students_in_group(guild, group)) >= MAX_GROUP_SIZE:
         await ctx.send(btm.message_max_members_in_group_error(new_lab_group.name, MAX_GROUP_SIZE))
     else:
         if not hpf.member_in_teaching_team(member, guild):
@@ -134,7 +134,7 @@ async def aux_leave_group(
                           group_message=group_message,
                           general_message=general_message)
         # If group get empty, open it
-        if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1 \
+        if len(hpf.all_students_in_group(guild, existing_lab_group.name)) < 1 \
                 and is_closed_group(guild, existing_lab_group) \
                 and not hpf.member_in_teaching_team(member, guild):
             await open_group(guild, existing_lab_group)
@@ -147,7 +147,7 @@ async def aux_leave_group(
 
 async def aux_move_to(ctx, member: discord.Member, group: Optional[int]):
     MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
-    if group and len(hpf.all_students_in_group(ctx, group)) >= MAX_GROUP_SIZE:
+    if group and len(hpf.all_students_in_group(ctx.guild, group)) >= MAX_GROUP_SIZE:
         await ctx.send(
             btm.message_max_members_in_group_error(hpf.get_lab_group_name(group), MAX_GROUP_SIZE))
     else:
