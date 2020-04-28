@@ -5,6 +5,7 @@ import discord
 
 from aux_commands.create_delete_group import aux_create_group
 from aux_commands.join_leave_group import aux_join_group
+from aux_commands.open_close_groups import is_open_group
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.guild_config import GUILD_CONFIG
 
@@ -47,7 +48,7 @@ async def aux_random_join(ctx, member_mention: discord.Member, *args):
         available_lab_groups = []
         for group in hpf.all_existing_lab_groups(ctx.guild):
             group_number = hpf.get_lab_group_number(group.name)
-            if group_number and group not in excluded_groups:
+            if group_number and group not in excluded_groups and is_open_group(ctx.guild, group):
                 available_lab_groups.append(group)
         await random_assignment(ctx, member, available_lab_groups)
 
@@ -62,7 +63,7 @@ async def aux_random_join_all(ctx, *args):
     available_lab_groups = []
     for group in hpf.all_existing_lab_groups(ctx.guild):
         group_number = hpf.get_lab_group_number(group.name)
-        if group_number and group not in excluded_groups:
+        if group_number and group not in excluded_groups and is_open_group(ctx.guild, group):
             available_lab_groups.append(group)
     no_group_members = hpf.all_members_with_no_group(ctx.guild)
     # Assign groups
