@@ -17,6 +17,57 @@ from utils import helper_functions as hpf, bot_messages as btm
 invites_lock = Lock()
 
 
+async def join_group(
+        guild: discord.Guild,
+        member: discord.Member,
+        new_role: discord.Role,
+        new_lab_group: discord.CategoryChannel,
+        group_message: bool = True,
+        general_message: bool = True
+):
+    await member.add_roles(new_role)
+    print(f'Role "{new_role}" assigned to {member}')
+    # Move to voice channel if connected
+    voice_channel = hpf.get_lab_voice_channel(guild, new_lab_group.name)
+    if voice_channel and member.voice and member.voice.channel:
+        await member.move_to(voice_channel)
+    # Message to group text channel
+    text_channel = hpf.get_lab_text_channel(guild, new_lab_group.name)
+    if group_message and text_channel:
+        await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group.name))
+    # Message to general channel
+    general_text_channel = hpf.get_general_text_channel(guild)
+    if general_message and general_text_channel and not hpf.member_in_teaching_team(member, guild):
+        await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group.name))
+
+
+async def leave_group(
+        guild: discord.Guild,
+        member: discord.Member,
+        existing_lab_role: discord.Role,
+        existing_lab_group: discord.CategoryChannel,
+        group_message: bool = True,
+        general_message: bool = True
+):
+    # Disconnect from the group voice channel if connected to it
+    voice_channel = hpf.existing_member_lab_voice_channel(member)
+    if voice_channel and member.voice and member.voice.channel == voice_channel:
+        general_voice_channel = hpf.get_general_voice_channel(guild)
+        # if no general_voice_channel, it will move user out of the current voice channel
+        await member.move_to(general_voice_channel if hpf.member_in_teaching_team(member, guild) else None)
+    # Message to group text channel
+    text_channel = hpf.existing_member_lab_text_channel(member)
+    if group_message and text_channel:
+        await text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
+    # Remove group role
+    await member.remove_roles(existing_lab_role)
+    print(f'Role "{existing_lab_role}" removed to {member}')
+    # Message to general channel
+    general_text_channel = hpf.get_general_text_channel(guild)
+    if general_message and general_text_channel and not hpf.member_in_teaching_team(member, guild):
+        await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
+
+
 async def aux_join_group(
         ctx,
         member: discord.Member,
@@ -51,22 +102,11 @@ async def aux_join_group(
                     return False
                 if invited:
                     invite_list.remove_invite(member.id, group_num)
-                await member.add_roles(new_role)
+                await join_group(guild, member, new_role, new_lab_group, group_message=group_message,
+                                 general_message=general_message)
         else:
-            await member.add_roles(new_role)
-        print(f'Role "{new_role}" assigned to {member}')
-        # Move to voice channel if connected
-        voice_channel = hpf.get_lab_voice_channel(guild, group)
-        if voice_channel and member.voice and member.voice.channel:
-            await member.move_to(voice_channel)
-        # Message to group text channel
-        text_channel = hpf.get_lab_text_channel(guild, group)
-        if group_message and text_channel:
-            await text_channel.send(btm.message_mention_member_when_join_group(member, new_lab_group.name))
-        # Message to general channel
-        general_text_channel = hpf.get_general_text_channel(guild)
-        if general_message and general_text_channel and not hpf.member_in_teaching_team(member, guild):
-            await general_text_channel.send(btm.message_member_joined_group(hpf.get_nick(member), new_lab_group.name))
+            await join_group(guild, member, new_role, new_lab_group, group_message=group_message,
+                             general_message=general_message)
         # Remove other invitations
         async with invites_lock:
             invite_list = GUILD_CONFIG.group_invites(guild)
@@ -90,27 +130,16 @@ async def aux_leave_group(
     existing_lab_role = hpf.existing_member_lab_role(member)
     if existing_lab_role:
         existing_lab_group = hpf.existing_member_lab_group(member)
-        # Disconnect from the group voice channel if connected to it
-        voice_channel = hpf.existing_member_lab_voice_channel(member)
-        if voice_channel and member.voice and member.voice.channel == voice_channel:
-            general_voice_channel = hpf.get_general_voice_channel(guild)
-            # if no general_voice_channel, it will move user out of the current voice channel
-            await member.move_to(general_voice_channel if hpf.member_in_teaching_team(member, guild) else None)
-        # Message to group text channel
-        text_channel = hpf.existing_member_lab_text_channel(member)
-        if group_message and text_channel:
-            await text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
-        # Remove group role
-        await member.remove_roles(existing_lab_role)
-        print(f'Role "{existing_lab_role}" removed to {member}')
-        # Message to general channel
-        general_text_channel = hpf.get_general_text_channel(guild)
-        if general_message and general_text_channel and not hpf.member_in_teaching_team(member, guild):
-            await general_text_channel.send(btm.message_member_left_group(hpf.get_nick(member), existing_lab_group.name))
+        await leave_group(guild, member, existing_lab_role, existing_lab_group,
+                          group_message=group_message,
+                          general_message=general_message)
         # If group get empty, open it
-        if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1 and is_closed_group(guild, existing_lab_group):
+        if len(hpf.all_students_in_group(ctx, existing_lab_group.name)) < 1 \
+                and is_closed_group(guild, existing_lab_group) \
+                and not hpf.member_in_teaching_team(member, guild):
             await open_group(guild, existing_lab_group)
             if show_open_message:
+                general_text_channel = hpf.get_general_text_channel(guild)
                 await general_text_channel.send(btm.success_group_open(existing_lab_group))
     elif show_not_in_group_error:
         await ctx.send(btm.message_member_not_in_any_group(member))
