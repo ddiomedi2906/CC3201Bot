@@ -199,7 +199,7 @@ async def invite_command(ctx, *, member: discord.Member):
 """
 
 
-@bot.command(name='random-join', aliases=["rj"], help='Join to a random available group.')
+@bot.command(name='random-join', aliases=["rj"], help='Join to a random available group.', hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
