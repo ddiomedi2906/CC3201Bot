@@ -3,7 +3,7 @@ from asyncio import Lock
 from collections import deque
 from collections.abc import MutableMapping
 import os
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Set
 
 import discord
 
@@ -157,8 +157,20 @@ class GuildConfig:
     def __contains__(self, guild: discord.Guild) -> bool:
         return guild.id in self.config
 
-    def broadcast_to_empty_groups(self, guild: discord.Guild) -> HelpQueue:
+    def require_nickname(self, guild: discord.Guild) -> bool:
+        return self.config[guild.id]["REQUIRE_NICKNAME"]
+
+    def max_students_per_group(self, guild: discord.Guild) -> int:
+        return self.config[guild.id]["MAX_STUDENTS_PER_GROUP"]
+
+    def broadcast_to_empty_groups(self, guild: discord.Guild) -> bool:
         return self.config[guild.id]["BROADCAST_TO_EMPTY_GROUPS"]
+
+    def open_groups(self, guild: discord.Guild) -> Set[str]:
+        return self.config[guild.id]["OPEN_GROUPS"]
+
+    def closed_groups(self, guild: discord.Guild) -> Set[str]:
+        return self.config[guild.id]["CLOSED_GROUPS"]
 
     def help_queue(self, guild: discord.Guild) -> HelpQueue:
         return self.config[guild.id]["HELP_QUEUE"]

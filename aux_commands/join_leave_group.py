@@ -79,15 +79,15 @@ async def aux_join_group(
     new_role = hpf.get_lab_role(guild, group)
     new_lab_group = hpf.get_lab_group(guild, group)
     existing_lab_group = hpf.existing_member_lab_group(member)
-    MAX_GROUP_SIZE = GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]
-    if GUILD_CONFIG[guild]["REQUIRE_NICKNAME"] and not member.nick:
+    max_group_size = GUILD_CONFIG.max_students_per_group(guild)
+    if GUILD_CONFIG.require_nickname(guild) and not member.nick:
         await ctx.send(btm.message_member_need_name_error(member))
     elif existing_lab_group:
         await ctx.send(btm.error_member_already_in_group(hpf.get_nick(member), existing_lab_group.name))
     elif not new_role:
         await ctx.send(btm.message_lab_group_not_exists(new_lab_group.name))
-    elif not hpf.member_in_teaching_team(member, guild) and len(hpf.all_students_in_group(guild, group)) >= MAX_GROUP_SIZE:
-        await ctx.send(btm.message_max_members_in_group_error(new_lab_group.name, MAX_GROUP_SIZE))
+    elif not hpf.member_in_teaching_team(member, guild) and len(hpf.all_students_in_group(guild, group)) >= max_group_size:
+        await ctx.send(btm.message_max_members_in_group_error(new_lab_group.name, max_group_size))
     else:
         if not hpf.member_in_teaching_team(member, guild):
             group_num = hpf.get_lab_group_number(new_lab_group.name)
@@ -146,10 +146,10 @@ async def aux_leave_group(
 
 
 async def aux_move_to(ctx, member: discord.Member, group: Optional[int]):
-    MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
-    if group and len(hpf.all_students_in_group(ctx.guild, group)) >= MAX_GROUP_SIZE:
+    max_group_size = GUILD_CONFIG.max_students_per_group(ctx.guild)
+    if group and len(hpf.all_students_in_group(ctx.guild, group)) >= max_group_size:
         await ctx.send(
-            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group), MAX_GROUP_SIZE))
+            btm.message_max_members_in_group_error(hpf.get_lab_group_name(group), max_group_size))
     else:
         await aux_leave_group(ctx, member, show_not_in_group_error=False, general_message=group is None)
         await asyncio.sleep(1)

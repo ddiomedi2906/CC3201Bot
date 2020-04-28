@@ -104,9 +104,9 @@ async def aux_create_group(ctx) -> Optional[discord.CategoryChannel]:
                 text_channel = await new_category.create_text_channel(text_channel_name)
                 await new_category.create_voice_channel(voice_channel_name)
                 # Success message
-                general_channel = discord.utils.get(guild.channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
-                if general_channel:
-                    await general_channel.send(btm.message_group_created(new_category_name, next_num))
+                general_text_channel = hpf.get_general_text_channel(guild)
+                if general_text_channel:
+                    await general_text_channel.send(btm.message_group_created(new_category_name, next_num))
                 await text_channel.send(btm.message_welcome_group(new_category_name))
                 await open_group(guild, new_category)
                 return new_category
@@ -140,9 +140,9 @@ async def aux_delete_group(ctx, group: Union[int, str], show_bot_message: bool =
             print(f'Deleting role: {role.name}')
             await role.delete()
         if success and show_bot_message:
-            general_channel = discord.utils.get(guild.channels, name=GUILD_CONFIG[guild]["GENERAL_TEXT_CHANNEL_NAME"])
-            if general_channel:
-                await general_channel.send(btm.message_group_deleted(category.name))
+            general_text_channel = hpf.get_general_text_channel(guild)
+            if general_text_channel:
+                await general_text_channel.send(btm.message_group_deleted(category.name))
 
 
 async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool = False) -> Optional[discord.CategoryChannel]:
@@ -150,9 +150,10 @@ async def aux_make_group(ctx, members: List[discord.Member], random_choice: bool
     if not hpf.member_in_teaching_team(ctx.author, guild) and ctx.author not in members:
         members.append(ctx.author)
     members = set(members)
+    max_group_size = GUILD_CONFIG.max_students_per_group(guild)
     # Check if there are not more members than allowed
-    if len(members) > GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]:
-        await ctx.send(btm.message_too_many_members_error(GUILD_CONFIG[guild]["MAX_STUDENTS_PER_GROUP"]))
+    if len(members) > max_group_size:
+        await ctx.send(btm.message_too_many_members_error(max_group_size))
         return None
     members_with_groups = False
     # Check if any member is already in any group

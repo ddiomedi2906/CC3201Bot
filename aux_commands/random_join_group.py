@@ -20,11 +20,11 @@ async def random_assignment(ctx, member: discord.Member, available_existing_grou
     if not member.nick:
         await ctx.send(btm.message_member_need_name_error(member))
         return available_existing_groups
-    MAX_GROUP_SIZE = GUILD_CONFIG[ctx.guild]["MAX_STUDENTS_PER_GROUP"]
+    max_group_size = GUILD_CONFIG.max_students_per_group(ctx.guild)
     while len(available_existing_groups) > 0:
         random_lab_group = random.choice(available_existing_groups)
         random_group = hpf.get_lab_group_number(random_lab_group.name)
-        if random_group and len(hpf.all_students_in_group(ctx.guild, random_group)) < MAX_GROUP_SIZE:
+        if random_group and len(hpf.all_students_in_group(ctx.guild, random_group)) < max_group_size:
             success = await aux_join_group(ctx, member, random_group)
             if success:
                 return available_existing_groups
