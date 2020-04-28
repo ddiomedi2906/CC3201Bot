@@ -3,7 +3,7 @@ from typing import Union
 
 import discord
 
-from aux_commands.join_leave_group import aux_leave_group, aux_join_group
+from aux_commands.join_leave_group import aux_leave_group, aux_join_group, leave_group, join_group
 from utils.emoji_utils import get_unicode_emoji_from_alias
 from utils.guild_config import GUILD_CONFIG
 from utils import helper_functions as hpf, bot_messages as btm
@@ -17,9 +17,10 @@ from utils import helper_functions as hpf, bot_messages as btm
 help_queue_lock = Lock()
 
 
-async def go_for_help_from_message(ctx, member: discord.Member, message: discord.Message, group: Union[int, str]) -> bool:
-    await aux_leave_group(ctx, member, show_not_in_group_error=False)
+async def go_for_help_from_message(member: discord.Member, message: discord.Message, group: Union[int, str]) -> bool:
     guild = member.guild
+    if hpf.existing_member_lab_role(member):
+        await leave_group(guild, member, hpf.existing_member_lab_role(member), hpf.existing_member_lab_group(member))
     lab_group = hpf.get_lab_group(guild, group)
     async with help_queue_lock:
         message_id = GUILD_CONFIG.help_queue(guild).extract_group(group)
@@ -30,8 +31,10 @@ async def go_for_help_from_message(ctx, member: discord.Member, message: discord
     group_text_channel = hpf.get_lab_text_channel(guild, lab_group.name)
     if group_text_channel:
         await group_text_channel.send(btm.message_help_on_the_way(member, show_mention=True))
-    await aux_join_group(ctx, member, group, group_message=False)
-    return True
+    if hpf.get_lab_role(guild, group):
+        await join_group(guild, member, hpf.get_lab_role(guild, group), lab_group, group_message=False)
+        return True
+    return False
 
 
 async def aux_go_for_help_from_command(ctx, member: discord.Member) -> bool:

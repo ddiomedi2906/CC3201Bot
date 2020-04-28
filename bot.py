@@ -65,15 +65,15 @@ async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member
     message = reaction.message
     emoji = reaction.emoji
     guild = message.guild
-    if message.author == bot.user and len(message.reactions) <= 1 and re.search(r"calling for help", message.content):
-        if bot.user in await reaction.users().flatten():
-            return
+    # bot reacted for marking the message as attended
+    if bot.user == user:
+        return
+    elif message.author == bot.user and re.search(r"calling for help", message.content):
         success = False
-        # TODO: remove from previous group
-        if hpf.member_in_teaching_team(user, guild):
-            success = await rhh.go_for_help_from_message(bot.get_context(message), user, message, group=hpf.get_lab_group_number(message.content))
+        if len(message.reactions) <= 1 and hpf.member_in_teaching_team(user, guild):
+            success = await rhh.go_for_help_from_message(user, message, group=hpf.get_lab_group_number(message.content))
         if not success:
-            await message.remove_reaction(reaction, message.author)
+            await message.remove_reaction(reaction, user)
     elif message.author == bot.user and len(message.reactions) <= 1:
         if same_emoji(emoji, 'slight_smile'):
             await message.add_reaction(get_unicode_emoji_from_alias('thumbsup'))
@@ -460,7 +460,7 @@ async def save_all_task():
 """
 
 def main(argv):
-    print(argv)
+    # print(argv)
     bot.run(TOKEN)
 
 
