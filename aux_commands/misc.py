@@ -4,6 +4,7 @@ import discord
 
 from utils.emoji_utils import get_unicode_emoji_from_alias
 from utils import bot_messages as btm, helper_functions as hpf
+from utils.guild_config import GUILD_CONFIG
 
 
 async def aux_broadcast(ctx, message: str):
@@ -13,7 +14,8 @@ async def aux_broadcast(ctx, message: str):
         await general_text_channel.send(btm.broadcast_message_from(ctx.author, message))
     for group in hpf.all_existing_lab_groups(guild):
         text_channel = hpf.get_lab_text_channel(guild, group.name)
-        await text_channel.send(btm.broadcast_message_from(ctx.author, message))
+        if GUILD_CONFIG.broadcast_to_empty_groups(guild) or len(hpf.all_students_in_group(guild, group.name)) > 0:
+            await text_channel.send(btm.broadcast_message_from(ctx.author, message))
 
 
 async def aux_whereis(ctx, members: List[discord.Member], invalid_name: Optional[str] = None):

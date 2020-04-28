@@ -157,6 +157,9 @@ class GuildConfig:
     def __contains__(self, guild: discord.Guild) -> bool:
         return guild.id in self.config
 
+    def broadcast_to_empty_groups(self, guild: discord.Guild) -> HelpQueue:
+        return self.config[guild.id]["BROADCAST_TO_EMPTY_GROUPS"]
+
     def help_queue(self, guild: discord.Guild) -> HelpQueue:
         return self.config[guild.id]["HELP_QUEUE"]
 

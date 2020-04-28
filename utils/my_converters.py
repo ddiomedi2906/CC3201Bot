@@ -22,13 +22,14 @@ class GuildSettings:
     @classmethod
     async def convert(cls, ctx, argument):
         arguments = re.split('\s+', argument)
-        usage = 'Usage: `!set [-n <on/off>] [-g <groups_size>]`'
+        usage = 'Usage: `!set [-n <on/off>] [-g <groups_size>] [-b <on/off>]`'
         try:
-            opts, args = getopt.getopt(arguments, "hn:g:", ["require_nickname=", "group_size="])
+            opts, args = getopt.getopt(arguments, "hn:g:b:", ["require_nickname=", "group_size=", "broadcast_empty="])
         except getopt.GetoptError:
             raise commands.BadArgument(usage)
         nickname = None
         groups_size = None
+        broadcast_empty = None
         for opt, arg in opts:
             if opt == '-h':
                 break
@@ -41,7 +42,15 @@ class GuildSettings:
                     groups_size = int(arg)
                 except ValueError:
                     raise commands.BadArgument(usage)
-        return cls(REQUIRE_NICKNAME=nickname, MAX_STUDENTS_PER_GROUP=groups_size)
+            elif opt in ("-b", "--broadcast_empty"):
+                broadcast_empty = convert_bool(arg)
+                if broadcast_empty is None:
+                    raise commands.BadArgument(usage)
+        return cls(
+            REQUIRE_NICKNAME=nickname,
+            MAX_STUDENTS_PER_GROUP=groups_size,
+            BROADCAST_TO_EMPTY_GROUPS=broadcast_empty
+        )
 
     @property
     def changed_items(self):
