@@ -25,7 +25,8 @@ from utils.guild_config import GUILD_CONFIG
 from utils.my_converters import GuildSettings, LabGroup
 
 # TODO: spanish messages
-bot = commands.Bot(command_prefix='!')
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='!', intents=intents)
 join_make_group_lock = Lock()
 
 """
