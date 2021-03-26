@@ -24,7 +24,7 @@ def info_welcome_to_guild(member: discord.Member, guild: discord.Guild) -> str:
 
 def info_guild_settings(guild: discord.Guild, settings: List[Tuple[str, Any]]) -> str:
     changes_list = "\n".join([f" - {key} = {value}" for key, value in settings])
-    return f"**{guild.name}** actual settings: ```{changes_list}```"
+    return f"**{guild.name}** current settings: ```{changes_list}```"
 
 
 def info_group_details(members: List[discord.Member], group: discord.CategoryChannel, is_open: bool) -> str:
@@ -248,6 +248,10 @@ def get_emoji_group(number: int, letter: str = 'g') -> str:
 def message_list_group_members(group: int, members: List) -> str:
     member_list = '\n'.join([f" - {get_nick(member)}" for member in members])
     return f"{get_emoji_group(group)}```{member_list}```"
+
+def message_list_no_group_members(members: List) -> str:
+    member_list = '\n'.join([f" - {get_nick(member)}" for member in members])
+    return f"**No group**```{member_list}```"
 
 """
 ####################################################################
