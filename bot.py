@@ -12,13 +12,26 @@ from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
 
+# TODO (ddiomedi2906): move all commands imported in aux_commands to LabotaCommands proxy class
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
-    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg, \
-    assign_group as ag
-from aux_commands.clean_group import aux_clean_group
-from aux_commands.manage_guild_settings import aux_init_guild, aux_set_guild, aux_save_guild
-from aux_commands.misc import aux_salute, aux_broadcast, aux_whereis
-from aux_commands.open_close_groups import aux_open_group, aux_close_group, is_open_group, is_closed_group
+    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
+from aux_commands import (
+    LabotaCommands,
+    # clean_group
+    aux_clean_group,
+    # misc
+    aux_salute,
+    aux_broadcast,
+    aux_whereis,
+    # manage_guild_settings
+    aux_init_guild,
+    aux_set_guild,
+    aux_save_guild,
+    # open_close_groups
+    aux_open_group,
+    aux_close_group,
+    is_open_group,
+)
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
@@ -222,8 +235,7 @@ async def random_join_all_command(ctx, *args):
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def assign_all_command(ctx):
-    async with ctx.channel.typing():
-        await ag.aux_assign_all(ctx)
+    await LabotaCommands.assign_all(ctx)
 
 """
 ####################################################################
