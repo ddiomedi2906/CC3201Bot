@@ -75,6 +75,16 @@ def all_existing_lab_groups(guild: discord.Guild) -> List[discord.CategoryChanne
 def all_members_with_no_group(guild: discord.Guild) -> List[discord.Member]:
     return [member for member in guild.members if existing_member_lab_role(member) is None]
 
+def all_online_members(guild: discord.Guild) -> List[discord.Member]:
+    return select_online_members(guild, guild.members)
+
+def select_online_members(guild: discord.Guild, members: List[discord.Member]) -> List[discord.Member]:
+    return [member for member in members if member.status == discord.Status.online]
+
+def all_students_with_no_group(guild: discord.Guild) -> List[discord.Member]:
+    student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)
+    return [member for member in guild.members if existing_member_lab_role(member) is None and student_role in member.roles]
+
 
 def all_non_empty_groups(guild: discord.Guild) -> List[discord.CategoryChannel]:
     student_role = discord.utils.get(guild.roles, name=STUDENT_ROLE_NAME)

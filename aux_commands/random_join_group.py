@@ -43,7 +43,7 @@ async def aux_random_join(ctx, member_mention: discord.Member, *args):
     if not member:
         await ctx.send(btm.message_member_not_exists(member_mention.nick))
     elif not excluded_groups:
-        await ctx.send("All extra arguments should be integers!")
+        await ctx.send("All extra arguments should be integers for excluded groups.")
     else:
         available_lab_groups = []
         for group in hpf.all_existing_lab_groups(ctx.guild):
@@ -56,18 +56,17 @@ async def aux_random_join(ctx, member_mention: discord.Member, *args):
 async def aux_random_join_all(ctx, *args):
     # Get excluded groups
     excluded_groups = hpf.get_excluded_groups(*args)
-    if not excluded_groups:
-        await ctx.send("All extra arguments should be integers!")
-        return
+    #if not excluded_groups:
+    #    await ctx.send("All extra arguments should be integers for excluded groups.")
+    #    return
     # Get available groups
     available_lab_groups = []
     for group in hpf.all_existing_lab_groups(ctx.guild):
         group_number = hpf.get_lab_group_number(group.name)
         if group_number and group not in excluded_groups and is_open_group(ctx.guild, group):
             available_lab_groups.append(group)
-    no_group_members = hpf.all_members_with_no_group(ctx.guild)
+    no_group_members = hpf.all_students_with_no_group(ctx.guild)
     # Assign groups
     for member in no_group_members:
-        if not member.bot and member.status == discord.Status.online \
-                and not hpf.member_in_teaching_team(member, ctx.guild):
-            available_lab_groups = await random_assignment(ctx, member, available_lab_groups)
+        # if member.status == discord.Status.online:
+        available_lab_groups = await random_assignment(ctx, member, available_lab_groups)

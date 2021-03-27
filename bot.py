@@ -13,11 +13,12 @@ import discord
 from discord.ext import commands
 
 from aux_commands import create_delete_group as cdg, join_leave_group as jlg, \
-    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg
+    random_join_group as rjg, raise_hand_for_help as rhh, allow_deny_permissions as adp, list_group as lg, \
+    assign_group as ag
 from aux_commands.clean_group import aux_clean_group
 from aux_commands.manage_guild_settings import aux_init_guild, aux_set_guild, aux_save_guild
 from aux_commands.misc import aux_salute, aux_broadcast, aux_whereis
-from aux_commands.open_close_groups import aux_open_group, aux_close_group
+from aux_commands.open_close_groups import aux_open_group, aux_close_group, is_open_group, is_closed_group
 from global_variables import *
 from utils import bot_messages as btm, helper_functions as hpf
 from utils.emoji_utils import same_emoji, get_unicode_from_emoji, get_unicode_emoji_from_alias
@@ -86,7 +87,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.MaxConcurrencyReached):
-        await ctx.send(f'Only {error.number} concurred invocations of this command are allowed.')
+        await ctx.send(f'Only {error.number} concurrent invocations of this command are allowed. Try again in a few seconds.')
     elif isinstance(error, commands.errors.CommandOnCooldown):
         await ctx.send(f'You have to wait {error.retry_after:.3}s before using this command again.')
     elif isinstance(error, commands.errors.CheckFailure):
@@ -109,7 +110,7 @@ async def on_command_error(ctx, error):
 """
 
 
-@bot.command(name='create-group', aliases=["cg", "create"], help='Create a new lab group.', hidden=True)
+@bot.command(name='create-group', aliases=["cg", "create"], help='Create a new group.')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def create_group(ctx):
@@ -117,7 +118,7 @@ async def create_group(ctx):
         await cdg.aux_create_group(ctx)
 
 
-@bot.command(name='create-many-groups', aliases=["cmg"], help='Create N new lab groups.', hidden=True)
+@bot.command(name='create-many-groups', aliases=["cmg"], help='Create N new groups. (Requires: value for N.)')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def create_many_groups(ctx, num_groups: int):
@@ -126,7 +127,7 @@ async def create_many_groups(ctx, num_groups: int):
             await cdg.aux_create_group(ctx)
 
 
-@bot.command(name='delete-group', aliases=["dg", "delete"], help='Delete a lab group. Need to provide the group number.', hidden=True)
+@bot.command(name='delete-group', aliases=["dg", "delete"], help='Delete a group. (Requires: group number.)')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def delete_group(ctx, group: Union[int, str]):
@@ -134,7 +135,7 @@ async def delete_group(ctx, group: Union[int, str]):
         await cdg.aux_delete_group(ctx, group)
 
 
-@bot.command(name='delete-all-groups', help='Delete all lab groups.', hidden=True)
+@bot.command(name='delete-all-groups', help='Delete all groups.')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def delete_all_groups(ctx):
@@ -143,7 +144,7 @@ async def delete_all_groups(ctx):
             await cdg.aux_delete_group(ctx, group.name)
 
 
-@bot.command(name='make-group', aliases=["mkg", "group"], help='Make a group with the given members.')
+@bot.command(name='make-group', aliases=["mkg", "group"], help='Make a group. (Requires: list of members.)')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def make_group_command(ctx, members: commands.Greedy[discord.Member], name_not_valid: Optional[str] = None):
@@ -163,7 +164,7 @@ async def make_group_command(ctx, members: commands.Greedy[discord.Member], name
 """
 
 
-@bot.command(name='move', help='Move member in a group. Need to provide the group number.', hidden=True)
+@bot.command(name='move', help='Move member to a group. (Requires: member name and group number.)')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def move_to_command(ctx, member_mention: discord.Member, group: Optional[Union[int, str]] = None):
@@ -171,7 +172,7 @@ async def move_to_command(ctx, member_mention: discord.Member, group: Optional[U
         await jlg.aux_move_to(ctx, member_mention, group)
 
 
-@bot.command(name='join', aliases=["j"], help='Join to a group. Need to provide the group number.')
+@bot.command(name='join', aliases=["j"], help='Join a group. (Requires: group number.)')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def join_command(ctx, group: Union[int, str]):
@@ -180,14 +181,14 @@ async def join_command(ctx, group: Union[int, str]):
             await jlg.aux_join_group(ctx, ctx.author, group)
 
 
-@bot.command(name='leave', aliases=["l"], help='Leave a group. Need to provide the group number.')
+@bot.command(name='leave', aliases=["l"], help='Leave your group.')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def leave_command(ctx):
     async with ctx.channel.typing():
         await jlg.aux_leave_group(ctx, ctx.author)
 
 
-@bot.command(name='invite', aliases=["i"], help='Invite someone to your group.')
+@bot.command(name='invite', aliases=["i"], help='Invite someone to your group. (Requires: member name.)')
 @commands.has_any_role(STUDENT_ROLE_NAME)
 async def invite_command(ctx, *, member: discord.Member):
     async with ctx.channel.typing():
@@ -195,12 +196,13 @@ async def invite_command(ctx, *, member: discord.Member):
 
 """
 ####################################################################
-################## RANDOM JOIN GROUP COMMANDS ######################
+################## ASSIGNING GROUP COMMANDS ########################
 ####################################################################
 """
 
 
-@bot.command(name='random-join', aliases=["rj"], help='Join to a random available group.', hidden=True)
+# deprecated
+@bot.command(name='random-join', aliases=["rj"], help='Assign a member to a random available group. (Requires: member name.)', hidden=True)
 @commands.cooldown(rate=1, per=1)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
@@ -208,13 +210,20 @@ async def random_join_command(ctx, member_mention: discord.Member, *args):
     async with ctx.channel.typing():
         await rjg.aux_random_join(ctx, member_mention, *args)
 
-
-@bot.command(name='random-join-all', aliases=["rjall"], help='Assign members with no group to a random available group.', hidden=True)
+# deprecated
+@bot.command(name='random-join-all', aliases=["rjall"], help='Assign students with no group to a random available group.', hidden=True)
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def random_join_all_command(ctx, *args):
     async with ctx.channel.typing():
         await rjg.aux_random_join_all(ctx, *args)
+
+@bot.command(name='assign-all', aliases=["assign"], help='Assign online students with no group to an available group.')
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def assign_all_command(ctx):
+    async with ctx.channel.typing():
+        await ag.aux_assign_all(ctx)
 
 """
 ####################################################################
@@ -222,17 +231,29 @@ async def random_join_all_command(ctx, *args):
 ####################################################################
 """
 
-
-@bot.command(name='open', help='Open group. Anyone can join the group.', hidden=True)
+@bot.command(name='open', help='Open your group. Anyone can join the group.')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def open_command(ctx, *, group: Optional[LabGroup]):
     async with ctx.channel.typing():
         await aux_open_group(ctx, group)
 
 
-@bot.command(name='close', help='Close group. No one can join the group.', hidden=True)
+@bot.command(name='close', help='Close your group. Only invited members can join the group.')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def close_command(ctx, *, group: Optional[LabGroup]):
+    async with ctx.channel.typing():
+        await aux_close_group(ctx, group)
+
+@bot.command(name='open-group', help='Open a group. (Requires: group number)')
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def open_group_command(ctx, *, group: LabGroup):
+    async with ctx.channel.typing():
+        await aux_open_group(ctx, group)
+
+
+@bot.command(name='close-group', help='Close a group. (Requires: group number)')
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def close_group_command(ctx, *, group: LabGroup):
     async with ctx.channel.typing():
         await aux_close_group(ctx, group)
 
@@ -244,7 +265,7 @@ async def close_command(ctx, *, group: Optional[LabGroup]):
 """
 
 
-@bot.command(name='clean', help='Clean group messages. Need to provide the group number.', hidden=True)
+@bot.command(name='clean-group', help='Clean group messages and remove members. (Requires: group number.)')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def clean_command(ctx, group: Union[int, str]):
@@ -252,7 +273,7 @@ async def clean_command(ctx, group: Union[int, str]):
         await aux_clean_group(ctx, group)
 
 
-@bot.command(name='clean-all', help='Clean all groups messages.', hidden=True)
+@bot.command(name='clean-all-groups', help='Clean all group messages and remove their members.')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
 async def clean_all_command(ctx, *args):
@@ -260,6 +281,17 @@ async def clean_all_command(ctx, *args):
         excluded_groups = hpf.get_excluded_groups(*args)
         groups_to_be_cleaned = [group for group in hpf.all_existing_lab_groups(ctx.guild)
                                 if hpf.get_lab_group_number(group.name) not in excluded_groups]
+        for group in sorted(groups_to_be_cleaned, key=lambda c: c.name, reverse=False):
+            await aux_clean_group(ctx, group.name)
+
+@bot.command(name='clean-open-groups', help='Clean all open group messages and remove their members.')
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME)
+async def clean_all_command(ctx, *args):
+    async with ctx.channel.typing():
+        excluded_groups = hpf.get_excluded_groups(*args)
+        groups_to_be_cleaned = [group for group in hpf.all_existing_lab_groups(ctx.guild)
+                                if hpf.get_lab_group_number(group.name) not in excluded_groups and is_open_group(ctx.guild, group)]
         for group in sorted(groups_to_be_cleaned, key=lambda c: c.name, reverse=False):
             await aux_clean_group(ctx, group.name)
 
@@ -278,15 +310,21 @@ async def get_info(ctx, *, group: LabGroup):
         await ctx.send(lg.aux_group_details(ctx, group, details=True))
 
 
-@bot.command(name='lab-list', aliases=["list"], help='List all groups with its members.', hidden=True)
+@bot.command(name='list', help='List all groups with their members.')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def get_lab_list(ctx):
     async with ctx.channel.typing():
         await lg.aux_get_list(ctx, message_size=2000)
 
+@bot.command(name='list-online', aliases=["online"], help='List all groups with their currently online members.')
+@commands.max_concurrency(number=1)
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def get_lab_list_online(ctx):
+    async with ctx.channel.typing():
+        await lg.aux_get_list(ctx, message_size=2000, only_online=True)
 
-@bot.command(name='open-groups', aliases=["og"], help='List all open groups with its members.')
+@bot.command(name='list-open', aliases=["og","open-groups"], help='List all open groups with their members.')
 @commands.max_concurrency(number=1)
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def open_list_command(ctx):
@@ -406,14 +444,14 @@ async def set_guild_command(ctx, *, settings: GuildSettings):
 """
 
 
-@bot.command(name='broadcast', help='Broadcast a message on all groups.', hidden=True)
+@bot.command(name='broadcast', help='Broadcast a message to all groups. (Requires: message)')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
 async def broadcast_command(ctx, *, message: str):
     async with ctx.channel.typing():
         await aux_broadcast(ctx, message)
 
 
-@bot.command(name='whereis', aliases=["w"], help='Find members\' group.')
+@bot.command(name='whereis', aliases=["w"], help='Find members\' group. (Requires: list of members)')
 @commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME, STUDENT_ROLE_NAME)
 async def where_is_command(ctx, members: commands.Greedy[discord.Member], invalid_name: Optional[str] = None):
     async with ctx.channel.typing():
