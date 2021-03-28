@@ -146,7 +146,7 @@ You can invite people to join the server.
 
 - Right click on `text-general`, then `Invite People`. Copy the invite URL and share it with those you wish to invite.
 
-- Don't forget to set roles for ayudantes and auxiliares by right clicking their name when they join, and using the `Roles` menu item. Note that the role Estudiante is not necessary for those with Ayudante, Auxiliar, Profesor.
+- Don't forget to set roles for ayudantes and auxiliares by right clicking their name when they join, and using the `Roles` menu item. You should not leave professores, auxiliares or ayudantes with the `Estudiante` role as otherwise they might be considered as members of groups, assigned to groups, etc.
 
 - Those interacting with the bot must have a nickname set on the server. They can do this by right clicking on their own name in the list on the right hand side and selecting `Change Nickname`. If you want to match users with students, be sure to ask them to set their nicknames to their real names. Until a nickname is set, many features will be unavailable. The reason for this restriction is so that when the command `!list` is used it can deliver the list of students quickly. Make sure to let them know about this when you invite them to a group. (In any case, they will receive messages from the bot to tell them to add their nickname if needed.)
 
