@@ -1,4 +1,4 @@
-import aux_commands.random_assign as ag
+from random_assign import RandomGroupAssigner
 
 
 class LabotaCommands:
@@ -14,4 +14,4 @@ class LabotaCommands:
         TODO: add function description
         """
         async with ctx.channel.typing():
-            return await ag.aux_assign_all(ctx)
+            return await RandomGroupAssigner.aux_assign_all(ctx)
