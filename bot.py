@@ -483,13 +483,14 @@ async def salute(ctx):
 
 async def save_all_task():
     await bot.wait_until_ready()
-    guild = bot.get_guild(int(TEST_GUILD_ID))
-    general_text_channel = hpf.get_general_text_channel(guild)
+    # guild = bot.get_guild(int(TEST_GUILD_ID))
+    # general_text_channel = hpf.get_general_text_channel(guild)
     sleep_time = timedelta(hours=12, minutes=0, seconds=0)
     while True:
         await GUILD_CONFIG.save_all()
         now = datetime.now()
-        await general_text_channel.send(f"Last config snapshot at {now.strftime('%H:%M:%S %Z on %d %b %Y')}")
+        # await general_text_channel.send(f"Last config snapshot at {now.strftime('%H:%M:%S %Z on %d %b %Y')}")
+        print(f"Last config snapshot at {now.strftime('%H:%M:%S %Z on %d %b %Y')}")
         await asyncio.sleep(sleep_time.seconds)
 
 """

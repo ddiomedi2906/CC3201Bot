@@ -4,7 +4,7 @@ import dotenv, os
 dotenv.load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-TEST_GUILD_ID = os.getenv('DISCORD_TEST_GUILD_ID')
+# TEST_GUILD_ID = os.getenv('DISCORD_TEST_GUILD_ID')
 PROFESSOR_ROLE_NAME = os.getenv('PROFESSOR_ROLE_NAME')
 HEAD_TA_ROLE_NAME = os.getenv('AUXILIAR_ROLE_NAME')
 TA_ROLE_NAME = os.getenv('ASSISTANT_ROLE_NAME')
