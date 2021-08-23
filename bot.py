@@ -74,6 +74,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member
         success = False
         if len(message.reactions) <= 1 and hpf.member_in_teaching_team(user, guild):
             success = await rhh.go_for_help_from_message(user, message, group=hpf.get_lab_group_number(message.content))
+            pass
         if not success:
             await message.remove_reaction(reaction, user)
     elif message.author == bot.user and len(message.reactions) <= 1:
@@ -388,6 +389,7 @@ async def deny_all(ctx, *args):
 async def go_for_help_command(ctx):
     async with ctx.channel.typing():
         await rhh.aux_go_for_help_from_command(ctx, ctx.author)
+    await ctx.message.delete(delay=10)
 
 
 @bot.command(name='raise-hand', aliases=[get_unicode_emoji_from_alias('raised_hand'), 'rh'],
@@ -398,6 +400,12 @@ async def raise_hand(ctx):
     async with ctx.channel.typing():
         await rhh.aux_raise_hand(ctx)
 
+@bot.command(name='clear-queue', aliases=['cq'], help='Removes all the groups in the help queue')
+@commands.has_any_role(PROFESSOR_ROLE_NAME, HEAD_TA_ROLE_NAME, TA_ROLE_NAME)
+async def clear_queue(ctx):
+    async with ctx.channel.typing():
+        await rhh.aux_clear_queue(ctx)
+    await ctx.message.delete(delay=10)
 
 """
 ####################################################################

@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from asyncio import Lock
 from collections import deque
@@ -12,10 +13,68 @@ from global_variables import DEFAULT_ENV_VALUES
 config_lock = Lock()
 
 
+class LogInfo:
+    def __init__(self, cached_log_info: Tuple[int, datetime]):
+        self.tt_members_log = {}
+        a = []
+        if len(cached_log_info) == 2:
+            self.log_message_id, self.last_log_update_date = cached_log_info
+        else:
+            self.log_message_id = 0
+            self.last_log_update_date = datetime.fromtimestamp(int(0)).strftime('%Y-%m-%d')
+
+    def serialize(self) -> Tuple[int, datetime]:
+        return (self.log_message_id, self.last_log_update_date)
+
+    def get_last_log_update_date(self) -> datetime:
+        return self.last_log_update_date
+
+    def get_log_message_id(self) -> int:
+        return self.log_message_id
+    
+    def update_last_log_update_date(self, date: datetime) -> bool:
+        try:
+            self.last_log_update_date = date
+            return True
+        except ValueError:
+            return False
+
+    def update_log_message_id(self, id: int) -> bool:
+        try:
+            self.log_message_id = id
+            return True
+        except ValueError:
+            return False
+
+    def update_tt_member_log(self, tt_member: discord.Member, tt_role: discord.Role, log: str) -> bool:
+        try:
+            self.tt_members_log[tt_role][tt_member].append(log)
+            return True
+        except ValueError:
+            return False
+
+    def add_tt_member_log(self, tt_member: discord.Member, tt_role: discord.Role) -> bool:
+        try:
+            if not (tt_role in self.tt_members_log):
+                self.tt_members_log[tt_role] = {}
+            self.tt_members_log[tt_role][tt_member] = []
+            return True
+        except ValueError:
+            return False
+
+    def delete_all_tt_members_log(self) -> bool:
+        try:
+            self.tt_members_log = {}
+            return True
+        except ValueError:
+            return False
+
+
 class HelpQueue:
     def __init__(self, cached_queue: List[Tuple[int, int]]):
         self.group_queue = deque()
         self.map_group_to_message_id = {}
+        self.empty_queue_message = 0
         for group, message_id in cached_queue:
             self.group_queue.append(group)
             self.map_group_to_message_id[group] = message_id
@@ -25,6 +84,11 @@ class HelpQueue:
 
     def serialize(self) -> List[Tuple[int, int]]:
         return [(group, self.map_group_to_message_id[group]) for group in list(self.group_queue)]
+
+    def clear_help_queue(self):
+        self.group_queue = deque()
+        self.map_group_to_message_id = {}
+        self.empty_queue_message = 0
 
     def index(self, idx: int) -> Optional[int]:
         try:
@@ -102,6 +166,7 @@ class GuildDict(MutableMapping):
         self["CLOSED_GROUPS"] = set(self.store["CLOSED_GROUPS"] if "CLOSED_GROUPS" in self.store else [])
         self["GROUP_INVITES"] = GroupInviteList(self.store["GROUP_INVITES"] if "GROUP_INVITES" in self.store else {})
         self["HELP_QUEUE"] = HelpQueue(self.store["HELP_QUEUE"] if "HELP_QUEUE" in self.store else [])
+        self["LOG_INFO"] = LogInfo(self.store["LOG_INFO"] if "LOG_INFO" in self.store else [])
 
     def __getitem__(self, key):
         key = self.__keytransform__(key)
@@ -129,7 +194,7 @@ class GuildDict(MutableMapping):
         for key, value in self.store.items():
             if type(value) == set:
                 serialized_dict[key] = list(value)
-            elif isinstance(value, HelpQueue) or isinstance(value, GroupInviteList):
+            elif isinstance(value, HelpQueue) or isinstance(value, GroupInviteList) or isinstance(value, LogInfo):
                 serialized_dict[key] = value.serialize()
             else:
                 serialized_dict[key] = value
@@ -174,6 +239,9 @@ class GuildConfig:
 
     def help_queue(self, guild: discord.Guild) -> HelpQueue:
         return self.config[guild.id]["HELP_QUEUE"]
+
+    def log_info(self, guild: discord.Guild) -> LogInfo:
+        return self.config[guild.id]["LOG_INFO"]
 
     def group_invites(self, guild: discord.Guild) -> GroupInviteList:
         return self.config[guild.id]["GROUP_INVITES"]

@@ -1,5 +1,6 @@
 # Bot's messages
-from typing import List, Tuple, Any
+from typing import Dict, List, Tuple, Any
+from datetime import datetime
 
 import discord
 
@@ -259,9 +260,13 @@ def message_list_no_group_members(members: List) -> str:
 ####################################################################
 """
 
-def message_call_for_help(group_name: str, available_members: List[discord.Member]) -> str:
+def message_call_for_help(queue: str, available_members: List[discord.Member]) -> str:
     members_string = ' '.join([member.mention for member in available_members]) if available_members else "Nobody available :("
-    return f"**{group_name}** is calling for help. \n {members_string}"
+    return f"**{queue}** are calling for help. \n {members_string}"
+
+
+def queue_is_empty_message() -> str:
+    return f"The queue is empty :)"
 
 
 def message_help_on_the_way(member: discord.Member, show_mention: bool = False) -> str:
@@ -324,3 +329,19 @@ def info_member_accepted_another_invite(member: discord.Member) -> str:
 def success_invite_sent_to_group(member: discord.Member, group: discord.CategoryChannel, group_num: int) -> str:
     return f"**{member.mention}** has been invited to join **{group.name}**! Use `!join {group_num}` to accept."
 
+
+"""
+####################################################################
+########################### LOG MESSAGES ###########################
+####################################################################
+"""
+
+def log_message(tt_members_log: Dict[discord.Role, Dict[discord.Member, str]]) -> str:
+    out = "```\n"
+    out += str("**" + datetime.today().strftime('%d-%m-%Y') + " log**\n")
+    for role in tt_members_log.keys():
+        out += str('\n' + role.name + ": \n")
+        for member, member_log in tt_members_log[role].items():
+            out += str("{}: {}\n".format(get_nick(member), member_log))
+    out += "\n```"
+    return out

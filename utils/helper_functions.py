@@ -114,6 +114,8 @@ def all_students_in_group(guild: discord.Guild, group: Union[int, str]) -> List[
 def all_online_members_from_role(role: discord.Role) -> List[discord.Member]:
     return [member for member in role.members if member.status == discord.Status.online]
 
+def all_members_from_role(role: discord.Role) -> List[discord.Member]:
+    return [member for member in role.members]
 
 def all_teaching_team_roles(guild: discord.Guild) -> List[discord.Role]:
     return [role for role in guild.roles if role.name in GUILD_CONFIG[guild]["TT_ROLES"]]
@@ -125,6 +127,13 @@ def all_teaching_team_members(guild: discord.Guild) -> List[discord.Member]:
     for role in tt_roles:
         available_team.extend(all_online_members_from_role(role))
     return available_team
+
+def member_role_in_teaching_team(member: discord.Member, guild: discord.Guild) -> Optional[discord.Role]:
+    tt_roles = all_teaching_team_roles(guild)
+    for member_role in member.roles:
+        if discord.utils.get(tt_roles, name=member_role.name):
+            return discord.utils.get(tt_roles, name=member_role.name)
+    return None
 
 
 def member_in_teaching_team(member: discord.Member, guild: discord.Guild) -> bool:
@@ -190,6 +199,18 @@ def get_general_text_channel(guild: discord.Guild) -> Optional[discord.TextChann
 def get_general_voice_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
     return discord.utils.get(guild.voice_channels, name=GUILD_CONFIG[guild]["GENERAL_VOICE_CHANNEL_NAME"])
 
+
+def get_private_text_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
+    return discord.utils.get(guild.text_channels, name=GUILD_CONFIG[guild]["PRIVATE_TEXT_CHANNEL_NAME"])
+
+def get_log_text_channel(guild: discord.Guild) -> Optional[discord.TextChannel]:
+    return discord.utils.get(guild.text_channels, name=GUILD_CONFIG[guild]["LOG_TEXT_CHANNEL"])
+
+def get_queue_groups_names(queue: list):
+    groups_names = []
+    for group in queue:
+        groups_names.append(get_lab_group_name(group))
+    return str(groups_names)[1:len(str(groups_names))-1]
 
 def get_excluded_groups(*args) -> List[int]:
     excluded_groups: List[int] = []
